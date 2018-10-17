@@ -1,4 +1,4 @@
-(define (sqrt-iter  guess x stop-check)
+(define (sqrt-iter guess x stop-check)
   (if (stop-check guess x)
     guess
     (sqrt-iter
