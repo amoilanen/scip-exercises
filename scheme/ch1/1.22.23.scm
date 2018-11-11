@@ -36,8 +36,8 @@
       ((newline) (display "finished"))
       (search-for-primes next (+ 1 from) to)))
 
-; Sizes of the input: first call n, second call 100 * n
-; since time is square root, first call executes at t, second at 10 * t
+; Sizes of the input: second call n, first call 100 * n
+; since time is square root, second call executes at t, first at 10 * t
 (
   (search-for-primes faster-next 10000 10100)
   (search-for-primes faster-next 100 200)
