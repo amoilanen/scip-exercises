@@ -2,7 +2,7 @@
   (if (> a b)
       null-value
       (combiner (term a)
-         (product term (next a) next b))))
+         (accumulate combiner null-value term (next a) next b))))
 
 (define (accumulate-iter combiner null-value term a next b)
   (define (iter a result)
@@ -22,5 +22,5 @@
 
 (define (identity x) x)
 
-(sum square 3 inc 4)
+(sum square 1 inc 10)
 (product identity 1 inc 5)
