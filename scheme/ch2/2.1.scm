@@ -8,9 +8,6 @@
         ((> 0 x) 1)
         ((< 0 x) -1)))
 
-(define (combined-sign x y)
-  (* (sign x) (sign y)))
-
 (define (make-rat n d)
   (let ((g (gcd n d)))
        (let ((n_norm (/ n g))
