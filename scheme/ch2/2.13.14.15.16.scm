@@ -56,3 +56,8 @@
 (newline)
 ; (81.6547619047619, 121.85526315789473)
 (display-interval (squared-2 interval-1))
+
+; 2.15 Performing an arithmetic operation with an interval increases the error margin of the other operand
+; the fewer operation with uncertain values (intervals) - the more precise the result
+
+; 2.16 Following from 2.15 the fewer operations performed - the more precise the result.
