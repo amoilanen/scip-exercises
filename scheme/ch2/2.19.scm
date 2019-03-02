@@ -22,3 +22,5 @@
 
 (newline)
 (display (cc 100 us-coins)) ; 292
+; Order of 'coins' does not affect the answer because all the combinations of coin sums will be gone through
+; just maybe in a different order
