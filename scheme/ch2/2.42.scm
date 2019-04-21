@@ -71,3 +71,9 @@
   (lambda (positions)
     (display-board (board-visualization 3 positions)))
   (queens 3))
+
+; 2.43 In the second version of the program all the possible queen combinations are checked rather than building on top
+; of previously found solutions.
+; T_n - faster solution time for n
+; T_n = T_n-1 * n ~ n!
+; G_n ~ n ^ n

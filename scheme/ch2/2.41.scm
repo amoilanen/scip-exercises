@@ -32,4 +32,5 @@
     (unique-triples n)))
 
 (newline)
-(display (triples-with-sum 4 6))
+(display (triples-with-sum 4
+ 6))
