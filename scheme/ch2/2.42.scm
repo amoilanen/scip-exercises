@@ -74,6 +74,7 @@
 
 ; 2.43 In the second version of the program all the possible queen combinations are checked rather than building on top
 ; of previously found solutions.
-; T_n - faster solution time for n
+; T_n - faster solution time fo board size n
+; G_n - slower solution time for board size n
 ; T_n = T_n-1 * n ~ n!
 ; G_n ~ n ^ n
