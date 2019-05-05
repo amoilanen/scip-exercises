@@ -113,6 +113,12 @@
                      (make-vect 0.0 0.0)
                      (make-vect 1.0 1.0)))
 
+(define (flip-vert painter)
+  (transform-painter painter
+                     (make-vect 0.0 1.0)
+                     (make-vect 1.0 1.0)
+                     (make-vect 0.0 0.0)))
+
 (define (rotate-90 painter)
   (transform-painter painter
                      (make-vect 1.0 0.0)
@@ -131,32 +137,44 @@
                      (make-vect 0.0 1.0)
                      (make-vect 1.0 0.0)))
 
-(define (rotate-270 painter)
-  (transform-painter painter
-                     (make-vect 0.0 1.0)
-                     (make-vect 0.0 0.0)
-                     (make-vect 1.0 1.0)))
-
-(define (below painter1 painter2)
-  (let ((split-point (make-vect 0.0 0.5)))
-    (let ((paint-top
-           (transform-painter painter2
-                              split-point
-                              (make-vect 1.0 0.5)
-                              (make-vect 0.0 1.0)))
-          (paint-bottom
-           (transform-painter painter1
-                              (make-vect 0.0 0.0)
-                              (make-vect 1.0 0.0)
-                              split-point)))
-      (lambda (frame)
-        (paint-top frame)
-        (paint-bottom frame)))))
-
 (define (below painter1 painter2)
   (rotate-90 (beside (rotate-90-clockwise painter1) (rotate-90-clockwise painter2))))
 
-; 2.49 d. Simplified version of the wave pattern, the real one is similarly built, but more points
+(define (right-split painter n)
+  (if (= n 0)
+      painter
+      (let ((smaller (right-split painter (- n 1))))
+        (beside painter (below smaller smaller)))))
+
+(define (up-split painter n)
+  (if (= n 0)
+      painter
+      (let ((smaller (up-split painter (- n 1))))
+        (below painter (beside smaller smaller)))))
+
+(define (corner-split painter n)
+  (if (= n 0)
+      painter
+      (let ((up (up-split painter (- n 1)))
+            (right (right-split painter (- n 1))))
+        (let ((top-left (beside up up))
+              (bottom-right (below right right))
+              (corner (corner-split painter (- n 1))))
+          (beside (below painter top-left)
+                  (below bottom-right corner))))))
+
+(define (square-limit painter n)
+  (let ((quarter (corner-split painter n)))
+    (let ((half (beside (flip-horiz quarter) quarter)))
+      (below (flip-vert half) half))))
+
+(define base-frame
+  (make-frame
+    (make-vect 0 0)
+    (make-vect 500 0)
+    (make-vect 0 500)))
+
+; Simplified version of the wave pattern
 (define (wave frame)
   ((segments->painter
     (list
@@ -166,33 +184,38 @@
       (make-segment (make-vect 1 0.5) (make-vect 0.5 0.5))
       (make-segment (make-vect 1 0) (make-vect 0.5 0.5)))) frame))
 
-(define base-frame
-  (make-frame
-    (make-vect 0 0)
-    (make-vect 500 0)
-    (make-vect 0 500)))
+(newline)
+(newline)
+(display "square-limit:")
+((square-limit wave 5)  base-frame)
 
-(newline)
-(newline)
-(display "wave:")
-(wave base-frame)
+; 2.52 a. Even more simplified version of the wave pattern
+(define (wave frame)
+  ((segments->painter
+    (list
+      (make-segment (make-vect 0 0) (make-vect 0.5 0.5))
+      (make-segment (make-vect 0.5 0.5) (make-vect 1 0.5)))) frame))
 
-(newline)
-(newline)
-(display "flip-horiz wave:")
-((flip-horiz wave) base-frame)
+; 2.52 b. Change pattern produced by corner-split
+(define (corner-split painter n)
+  (if (= n 0)
+      painter
+      (let ((up (up-split painter (- n 1)))
+            (right (right-split painter (- n 1))))
+        (let ((corner (corner-split painter (- n 1))))
+          (beside (below painter up)
+                  (below right corner))))))
 
-(newline)
-(newline)
-(display "rotate-180 wave:")
-((rotate-180 wave) base-frame)
+; 2.52 c. Modify square-limit
+(define (square-of-four tl tr bl br)
+  (lambda (painter)
+    (let ((top (beside (tl painter) (tr painter)))
+          (bottom (beside (bl painter) (br painter))))
+      (below bottom top))))
 
-(newline)
-(newline)
-(display "rotate-270 wave:")
-((rotate-270 wave) base-frame)
+(define (identity x) x)
 
-(newline)
-(newline)
-(display "below wave:")
-((below wave wave) base-frame)
+(define (square-limit painter n)
+  (let ((combine4 (square-of-four identity flip-horiz
+                                  flip-vert rotate-180)))
+    (combine4 (corner-split painter n))))
