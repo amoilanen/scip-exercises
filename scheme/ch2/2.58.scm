@@ -56,3 +56,74 @@
 
 (newline)
 (display (deriv '(x + (3 * (x + (y + 2)))) 'x))
+
+(newline)
+(display (caddr '(a + b * c + ( d + e ) * f)))
+
+(define (make-tree left right op)
+  (list left right op))
+
+(define (left-of-tree tree)
+  (car tree))
+
+(define (right-of-tree tree)
+  (cadr tree))
+
+(define (op-of-tree tree)
+  (caddr tree))
+
+(define (precedence op)
+  (cond ((equal? op '+) 1)
+        ((equal? op '*) 2)))
+
+(define (is-operator? ch)
+  (or (equal? ch '+) (equal? ch '*)))
+
+(define (push-operand x output)
+  (cons x output))
+
+(define (push-operator op output)
+  (let ((left (car output))
+        (right (cadr output))
+        (popped-output (cddr output)))
+    (cons (make-tree left right op) popped-output)))
+
+(define (push-all-operators ops output)
+  (if (null? ops)
+    output
+    (push-all-operators
+      (cdr ops)
+      (push-operator (car ops) output))))
+
+(define (build-ast infix-expr operators output)
+  (if (pair? infix-expr)
+    (let ((current-expr (car infix-expr)))
+      (newline)
+      (display "=begin=")
+      (newline)
+      (display infix-expr)
+      (newline)
+      (display current-expr)
+      (newline)
+      (display operators)
+      (newline)
+      (display output)
+      (newline)
+      (display "=end=")
+      (cond ((is-operator? current-expr) (
+              (if (and
+                      (pair? operators)
+                      (is-operator? (car operators))
+                      (>= (precedence (car operators)) (precedence current-expr)))
+                  (build-ast infix-expr (cdr operators) (push-operator (car operators) output))
+                  (build-ast (cdr infix-expr) (cons current-expr operators) output))))
+            ((pair? current-expr) (
+              (let ((current-output (build-ast current-expr '() '())))
+                (build-ast (cdr infix-expr) operators (cons current-output output)))))
+            (else
+              (build-ast (cdr infix-expr) operators (push-operand current-expr output)))))
+    (car (push-all-operators operators output))))
+
+;(display (build-ast '(a + b * c + ( d + e ) * f) '() '()))
+
+(display (build-ast '(a + b + c) '() '()))
