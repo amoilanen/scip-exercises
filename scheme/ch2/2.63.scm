@@ -64,3 +64,6 @@
 
 (newline)
 (display (tree->list-2 tree-3))
+
+; a. Both procedures produce the same results: in-order tree traversal
+; b. tree->list-2 is faster as it uses cons instead of append
