@@ -8,6 +8,9 @@
 
 (define (weight-leaf leaf) (caddr leaf))
 
+(define (contains? el list)
+  (not (eq? false (member el list))))
+
 (define (make-node left right)
   (list left
         right
@@ -49,13 +52,39 @@
         ((= bit 1) (right-branch branch))
         (else (error "bad bit -- CHOOSE-BRANCH" bit))))
 
+(define (encode message tree)
+  (if (null? message)
+      '()
+      (append (encode-symbol (car message) tree)
+              (encode (cdr message) tree))))
+
+(define (encode-symbol symbol tree)
+  (define (encode-symbol-subtree symbol bits tree)
+    (cond ((null? tree) (error "unknown symbol -- cannot encode" symbol))
+        ((leaf? tree) bits)
+        ((contains? symbol (symbols (left-branch tree)))
+          (encode-symbol-subtree symbol (cons 0 bits) (left-branch tree)))
+        ((contains? symbol (symbols (right-branch tree)))
+          (encode-symbol-subtree symbol (cons 1 bits) (right-branch tree)))
+        (else (error "unknown symbol - cannot encode" symbol))))
+  (reverse (encode-symbol-subtree symbol '() tree)))
+
 (define sample-tree
   (make-node (make-leaf 'A 4)
-                  (make-node
-                    (make-leaf 'B 2)
-                    (make-node (make-leaf 'D 1)
-                                    (make-leaf 'C 1)))))
+             (make-node
+               (make-leaf 'B 2)
+               (make-node (make-leaf 'D 1)
+                          (make-leaf 'C 1)))))
 
-(define sample-message '(0 1 1 0 0 1 0 1 0 1 1 1 0))
+(define encoded-message '(0 1 1 0 0 1 0 1 0 1 1 1 0))
+(define decoded-message '(A D A B B C A))
 
-(display (decode sample-message sample-tree))
+(newline)
+(display "Decoded:")
+(newline)
+(display (decode encoded-message sample-tree)) ; (a d a b b c a)
+
+(newline)
+(display "Encoded:")
+(newline)
+(display (encode decoded-message sample-tree))
