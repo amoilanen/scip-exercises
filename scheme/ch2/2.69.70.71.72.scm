@@ -58,7 +58,10 @@
         (let ((rarest-leaf (car leaf-set))
               (next-rarest-leaf (cadr leaf-set))
               (rest-of-leafs (cddr leaf-set)))
-          (successive-merge (adjoin-set (make-node rarest-leaf next-rarest-leaf) rest-of-leafs)))))))
+          (successive-merge
+            (adjoin-set
+              (make-node rarest-leaf next-rarest-leaf)
+              rest-of-leafs)))))))
 
 (define (generate-huffman-tree pairs)
   (successive-merge (make-leaf-set pairs)))
@@ -116,3 +119,12 @@ Sha boom))
 (display "Saved space, %")
 (newline)
 (display (exact->inexact (- 100 (* 100 (/ (length encoded-song) (* 3 (length song)))))))
+
+; 2.71 the tree will be skewed to one side, n bits to encode the least frequent symbol, 1 to encode the most frequent one
+; this is because sum(0..k, 2^k) = 2^(k+1) - 1 or all the symbols before next one has less summary frequency than the next symbol
+
+; 2.72 O(n^2) because ~n symbol set to check at each node, and at most n nodes, however might be too pessimistic and estimate,
+; only an upper bound.
+; For the least frequent symbol all the nodes of the tree will be visited n + (n - 1) + (n - 2) + ... + 1 symbols to search in in every node
+; = theta(n^2), however since the least frequent symbol is the first in the corresponding symbol sets, real time complexity 1 + 1 + ... + 1 = theta(n)
+; For the most frequent symbol also theta(n) as we would have to search for it in the symbol set, it will be the last one there and only one tree node will be visited
