@@ -12,7 +12,7 @@
   (define (put-global key1 key2 value)
     (define (put-local key entries)
       (cond ((null? entries) (list (make-entry key value)))
-            ((equal? (entry-key (car entries)) key) entries)
+            ((equal? (entry-key (car entries)) key) (cons (make-entry key value) (cdr entries)))
             (else (cons (car entries) (put-local key (cdr entries))))))
     (set! global-entries (put-local (cons key1 key2) global-entries)))
 
