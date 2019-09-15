@@ -35,13 +35,13 @@
 (define (attach-tag type-tag contents)
   (cons type-tag contents))
 (define (type-tag datum)
-  (if (pair? datum)
-      (car datum)
-      (error "Bad tagged datum -- TYPE-TAG" datum)))
+  (cond ((pair? datum) (car datum))
+        ((number? datum) 'scheme-number)
+        (else (error "Bad tagged datum -- TYPE-TAG" datum))))
 (define (contents datum)
-  (if (pair? datum)
-      (cdr datum)
-      (error "Bad tagged datum -- CONTENTS" datum)))
+  (cond ((pair? datum) (cdr datum))
+        ((number? datum) datum)
+        (error "Bad tagged datum -- CONTENTS" datum)))
 
 (define (apply-generic op . args)
   (let ((type-tags (map type-tag args)))
@@ -132,7 +132,10 @@
   (define (tag z) (attach-tag 'complex z))
   (define (equ? z1 z2)
     (and (eq? (real-part z1) (real-part z2)) (eq? (imag-part z1) (imag-part z2))))
+  (define (zero? z)
+    (and (eq? (real-part z) 0) (eq? (imag-part z) 0)))
   (put 'equ? '(complex complex) equ?)
+  (put 'zero? '(complex) zero?)
   (put 'real-part '(complex) real-part)
   (put 'imag-part '(complex) imag-part)
   (put 'magnitude '(complex) magnitude)
@@ -163,24 +166,19 @@
 ; Scheme numbers
 ;
 (define (install-scheme-number-package)
-  (define (tag x)
-    (attach-tag 'scheme-number x))
   (put 'equ? '(scheme-number scheme-number)
        (lambda (x y) (= x y)))
+  (put 'zero? '(scheme-number)
+       (lambda (x) (= x 0)))
   (put 'add '(scheme-number scheme-number)
-       (lambda (x y) (tag (+ x y))))
+       (lambda (x y) (+ x y)))
   (put 'sub '(scheme-number scheme-number)
-       (lambda (x y) (tag (- x y))))
+       (lambda (x y) (- x y)))
   (put 'mul '(scheme-number scheme-number)
-       (lambda (x y) (tag (* x y))))
+       (lambda (x y) (* x y)))
   (put 'div '(scheme-number scheme-number)
-       (lambda (x y) (tag (/ x y))))
-  (put 'make 'scheme-number
-       (lambda (x) (tag x)))
+       (lambda (x y) (/ x y)))
 'done)
-
-(define (make-scheme-number n)
-  ((get 'make 'scheme-number) n))
 
 ;
 ; Rational numbers
@@ -208,7 +206,10 @@
               (* (denom x) (numer y))))
   (define (equ? x y)
     (and (eq? (numer x) (numer y)) (eq? (denom x) (denom y))))
+  (define (zero? x)
+    (= (numer x) 0))
   (put 'equ? '(rational rational) equ?)
+  (put 'zero? '(rational) zero?)
   ;; interface to rest of the system
   (define (tag x) (attach-tag 'rational x))
   (put 'add '(rational rational)
@@ -222,10 +223,12 @@
 
   (put 'make 'rational
        (lambda (n d) (tag (make-rat n d))))
-  'done)
+'done)
+
 (define (make-rational n d)
   ((get 'make 'rational) n d))
 
+(define (zero? x) (apply-generic 'zero? x))
 (define (equ? x y) (apply-generic 'equ? x y))
 (define (add x y) (apply-generic 'add x y))
 (define (sub x y) (apply-generic 'sub x y))
@@ -236,18 +239,20 @@
 (install-rational-package)
 (install-complex-package)
 
-(define s1 (make-scheme-number 2))
-(define s2 (make-scheme-number 3))
-
 (newline)
-(display (add s1 s2)) ; 5
+(display (add 2 3)) ; 5
 (newline)
-(display (equ? s1 s1))
+(display (equ? 2 2))
 (newline)
-(display (equ? s1 s2))
+(display (equ? 2 3))
+(newline)
+(display (zero? 0))
+(newline)
+(display (zero? 2))
 
 (define r1 (make-rational 2 3))
 (define r2 (make-rational 5 7))
+(define r3 (make-rational 0 3))
 
 (newline)
 (display (mul r1 r2)) ; 10 / 21
@@ -255,9 +260,14 @@
 (display (equ? r1 r1))
 (newline)
 (display (equ? r1 r2))
+(newline)
+(display (zero? r3))
+(newline)
+(display (zero? r2))
 
 (define c1 (make-complex-from-real-imag 1 2))
 (define c2 (make-complex-from-real-imag 3 4))
+(define c3 (make-complex-from-real-imag 0 0))
 
 (newline)
 (display (add c1 c2)) ; 4 + 6i
@@ -265,3 +275,7 @@
 (display (equ? c1 c1))
 (newline)
 (display (equ? c1 c2))
+(newline)
+(display (zero? c3))
+(newline)
+(display (zero? c2))
