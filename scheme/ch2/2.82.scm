@@ -70,31 +70,20 @@
   (define arg-types (map type-tag args))
   (coerce-to-type (car arg-types) (cdr arg-types) args))
 
-; TODO Call coerce function instead of the hardcoded two argument handling
 (define (apply-generic op . args)
   (let ((type-tags (map type-tag args)))
     (let ((proc (get op type-tags)))
       (if proc
           (apply proc (map contents args))
-          (if (= (length args) 2)
-              (let ((type1 (car type-tags))
-                    (type2 (cadr type-tags))
-                    (a1 (car args))
-                    (a2 (cadr args)))
-                (if (not (eq? type1 type2))
-                    (let ((t1->t2 (get-coercion type1 type2))
-                          (t2->t1 (get-coercion type2 type1)))
-                        (cond
-                          (t1->t2
-                            (apply-generic op (t1->t2 a1) a2))
-                          (t2->t1
-                            (apply-generic op a1 (t2->t1 a2)))
-                        (else (error "No method for these types"
-                                (list op type-tags)))))
+          (let ((coerced-args (apply coerce args)))
+              (if coerced-args
+                (let ((proc (get op (map type-tag coerced-args))))
+                  (if proc
+                    (apply proc (map contents coerced-args))
                     (error "No method for these types"
                                 (list op type-tags))))
-              (error "No method for these types"
-                                (list op type-tags)))))))
+                (error "No method for these types"
+                                (list op type-tags))))))))
 
 ; Type pyramide, from most to least generic type: a > b > c
 
@@ -155,4 +144,4 @@
 ; c -> b, (a, b, c) -> (a, b, b) for which there is a custom-op
 (newline)
 (display (custom-op (make-a 6) (make-b 3) (make-c 2)))
-; throws error "No method for '(a a a)", instead of printing 6 - 3 - 2 = 1
+; throws error "No method for '(a b c)", instead of printing 6 - 3 - 2 = 1
