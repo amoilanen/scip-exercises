@@ -85,7 +85,7 @@
                 (error "No method for these types"
                                 (list op type-tags))))))))
 
-; Type pyramide, from most to least generic type: a > b > c
+; Type pyramide, from most to least generic type: a > b > c > d
 
 (define (make-a x)
   (attach-tag 'a x))
