@@ -32,12 +32,6 @@
 
 (define-put-get)
 
-(define (put-coercion type1 type2 coercion)
-  (put type1 type2 coercion))
-
-(define (get-coercion type1 type2)
-  (get type1 type2))
-
 (define (attach-tag type-tag contents)
   (cons type-tag contents))
 (define (type-tag datum)
@@ -167,7 +161,7 @@
 ;
 (define (install-integer-package)
   (define (tag n)
-    (attach-tag 'integer n))    
+    (attach-tag 'integer n))
   (put 'add '(integer integer)
        (lambda (n m) (tag (+ n m))))
   (put 'sub '(integer integer)
@@ -179,8 +173,8 @@
   (put 'make 'integer
        (lambda (n) (tag (inexact->exact n))))
   (define (integer->rational n)
-    (make-rational (contents n) 1))
-  (put-coercion 'integer 'rational integer->rational)
+    (make-rational n 1))
+  (put 'raise '(integer) integer->rational)
 'done)
 
 (define (make-integer n)
@@ -203,8 +197,8 @@
   (put 'make 'real
        (lambda (x) (tag (exact->inexact x))))
   (define (real->complex x)
-    (make-complex-from-real-imag (contents x) 0))
-  (put-coercion 'real 'complex real->complex)
+    (make-complex-from-real-imag x 0))
+  (put 'raise '(real) real->complex)
 'done)
 
 (define (make-real x)
@@ -248,11 +242,11 @@
   (put 'make 'rational
        (lambda (n d) (tag (make-rat n d))))
   (define (rational->real r)
-    (let ((n (car (contents r)))
-          (d (cdr (contents r))))
+    (let ((n (car r))
+          (d (cdr r)))
         (make-real (/ n d))))
-  (put-coercion 'rational 'real rational->real)
-  'done)
+  (put 'raise '(rational) rational->real)
+'done)
 (define (make-rational n d)
   ((get 'make 'rational) n d))
 
@@ -260,6 +254,7 @@
 (define (sub x y) (apply-generic 'sub x y))
 (define (mul x y) (apply-generic 'mul x y))
 (define (div x y) (apply-generic 'div x y))
+(define (raise x) (apply-generic 'raise x))
 
 (install-integer-package)
 (install-real-package)
@@ -291,8 +286,8 @@
 (display (add c1 c2)) ; 4 + 6i
 
 (newline)
-(display ((get-coercion 'integer 'rational) n1))
+(display (raise n1))
 (newline)
-(display ((get-coercion 'rational 'real) r1))
+(display (raise r1))
 (newline)
-(display ((get-coercion 'real 'complex) x1))
+(display (raise x1))
