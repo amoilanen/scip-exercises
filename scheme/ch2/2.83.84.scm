@@ -32,6 +32,12 @@
 
 (define-put-get)
 
+(define (put-coercion type1 type2 coercion)
+  (put type1 type2 coercion))
+
+(define (get-coercion type1 type2)
+  (get type1 type2))
+
 (define (attach-tag type-tag contents)
   (cons type-tag contents))
 (define (type-tag datum)
@@ -172,6 +178,9 @@
        (lambda (n m) (tag (/ n m))))
   (put 'make 'integer
        (lambda (n) (tag (inexact->exact n))))
+  (define (integer->rational n)
+    (make-rational (contents n) 1))
+  (put-coercion 'integer 'rational integer->rational)
 'done)
 
 (define (make-integer n)
@@ -193,10 +202,13 @@
        (lambda (x y) (tag (/ x y))))
   (put 'make 'real
        (lambda (x) (tag (exact->inexact x))))
+  (define (real->complex x)
+    (make-complex-from-real-imag (contents x) 0))
+  (put-coercion 'real 'complex real->complex)
 'done)
 
-(define (make-real n)
-  ((get 'make 'real) n))
+(define (make-real x)
+  ((get 'make 'real) x))
 
 ;
 ; Rational numbers
@@ -235,6 +247,11 @@
 
   (put 'make 'rational
        (lambda (n d) (tag (make-rat n d))))
+  (define (rational->real r)
+    (let ((n (car (contents r)))
+          (d (cdr (contents r))))
+        (make-real (/ n d))))
+  (put-coercion 'rational 'real rational->real)
   'done)
 (define (make-rational n d)
   ((get 'make 'rational) n d))
@@ -272,3 +289,10 @@
 
 (newline)
 (display (add c1 c2)) ; 4 + 6i
+
+(newline)
+(display ((get-coercion 'integer 'rational) n1))
+(newline)
+(display ((get-coercion 'rational 'real) r1))
+(newline)
+(display ((get-coercion 'real 'complex) x1))
