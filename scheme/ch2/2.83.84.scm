@@ -291,3 +291,52 @@
 (display (raise r1))
 (newline)
 (display (raise x1))
+
+;TODO: Use coerce in apply-generic to raise the arguments to the most generic type
+(define (coerce . args)
+  ;TODO: Implement coerce
+  args)
+
+(define (make-a x)
+  (attach-tag 'a x))
+
+(define (make-b x)
+  (attach-tag 'b x))
+
+(define (make-c x)
+  (attach-tag 'c x))
+
+; Type hierarchy from the most specific to the most generic type
+(define type-tower-hierarchy '(c b a))
+
+(define (index-of-element elements element)
+  (define (index-in-sublist elements element current-index)
+    (cond ((null? elements) -1)
+          ((eq? (car elements) element) current-index)
+          (else (index-in-sublist (cdr elements) element (+ 1 current-index)))))
+  (index-in-sublist elements element 0))
+
+(define (is-greater-type type1 type2)
+  (> (index-of-element type-tower-hierarchy type1) (index-of-element type-tower-hierarchy type2)))
+
+(put 'raise '(b)
+  (lambda (x) (make-a x)))
+(put 'raise '(c)
+  (lambda (x) (make-b x)))
+
+(newline)
+(display (raise (make-b 1)))
+(newline)
+(display (raise (make-c 2)))
+
+(newline)
+(display (index-of-element (list 1 2 3) 2))
+(newline)
+(display (index-of-element (list 1 2 3) 4))
+(newline)
+(display (is-greater-type 'b 'c))
+(newline)
+(display (is-greater-type 'b 'a))
+
+;(newline)
+;(display (coerce (make-a 1) (make-b 2) (make-c 3))); '('(a 1) '(a 2) '(a 3))
