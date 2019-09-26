@@ -294,8 +294,17 @@
 
 ;TODO: Use coerce in apply-generic to raise the arguments to the most generic type
 (define (coerce . args)
-  ;TODO: Implement coerce
-  args)
+  (define (coerce-to type arg)
+    (if (eq? (type-tag arg) type)
+        arg
+        (let ((raised-arg (raise arg)))
+          (if (eq? (type-tag arg) (type-tag raised-arg))
+            (error "Cannot coerce" (type-tag arg) 'to type)
+            (coerce-to type raised-arg)))))
+  (let ((greatest-type (car (sort (map type-tag args) is-greater-type))))
+    (map
+      (lambda (t) (coerce-to greatest-type t))
+      args)))
 
 (define (make-a x)
   (attach-tag 'a x))
@@ -305,6 +314,9 @@
 
 (define (make-c x)
   (attach-tag 'c x))
+
+(define (make-d x)
+  (attach-tag 'd x))
 
 ; Type hierarchy from the most specific to the most generic type
 (define type-tower-hierarchy '(c b a))
@@ -323,6 +335,8 @@
   (lambda (x) (make-a x)))
 (put 'raise '(c)
   (lambda (x) (make-b x)))
+(put 'raise '(d)
+  (lambda (x) (make-d x)))
 
 (newline)
 (display (raise (make-b 1)))
@@ -338,5 +352,12 @@
 (newline)
 (display (is-greater-type 'b 'a))
 
+(newline)
+(display (sort '(b a c) is-greater-type))
+
+(newline)
+(display (coerce (make-a 1) (make-b 2) (make-c 3))); '('(a 1) '(a 2) '(a 3))
+
+; Cannot coerce d to a
 ;(newline)
-;(display (coerce (make-a 1) (make-b 2) (make-c 3))); '('(a 1) '(a 2) '(a 3))
+;(display (coerce (make-a 1) (make-d 2) (make-c 3))); '('(a 1) '(a 2) '(a 3))
