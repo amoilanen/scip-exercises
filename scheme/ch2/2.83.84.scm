@@ -32,6 +32,59 @@
 
 (define-put-get)
 
+; (list
+;   '(numbers (integer rational real complex))
+;   '(test (c b a)))
+(define type-hierarchies '())
+
+(define (make-hierarchy name types)
+  (list name types))
+
+(define (hierarchy-name hierarchy)
+  (car hierarchy))
+
+(define (hierarchy-types hierarchy)
+  (cadr hierarchy))
+
+; TODO: Produce full ordering from partial ordering when adding new types to a particular hierarchy
+(define (add-type-to-hierarchy to-hierarchy-name type)
+  (let ((found-hierarchy
+          (filter (lambda (current-hierarchy) (eq? (hierarchy-name current-hierarchy) to-hierarchy-name)) type-hierarchies))
+        (other-hierarchies
+          (filter (lambda (current-hierarchy) (not (eq? (hierarchy-name current-hierarchy) to-hierarchy-name))) type-hierarchies)))
+    (let ((updated-hierarchy
+            (make-hierarchy to-hierarchy-name
+                            (if (not (null? found-hierarchy))
+                                (cons type (hierarchy-types (car found-hierarchy)))
+                                (list type)))))
+      (set! type-hierarchies (cons updated-hierarchy other-hierarchies)))))
+
+(add-type-to-hierarchy 'test 'a)
+(add-type-to-hierarchy 'test 'b)
+(add-type-to-hierarchy 'test 'c)
+(add-type-to-hierarchy 'numbers 'complex)
+(add-type-to-hierarchy 'numbers 'real)
+(add-type-to-hierarchy 'numbers 'rational)
+(add-type-to-hierarchy 'numbers 'integer)
+
+(define (exists? elements predicate)
+  (cond ((null? elements) #f)
+        ((predicate (car elements)) #t)
+        (else (exists? (cdr elements) predicate))))
+
+(define (index-of-element elements element)
+  (define (index-in-sublist elements element current-index)
+    (cond ((null? elements) -1)
+          ((eq? (car elements) element) current-index)
+          (else (index-in-sublist (cdr elements) element (+ 1 current-index)))))
+  (index-in-sublist elements element 0))
+
+(define (is-greater-type type1 type2)
+  (exists? type-hierarchies
+    (lambda (type-hierarchy)
+      (let ((types (hierarchy-types type-hierarchy)))
+        (> (index-of-element types type1) (index-of-element types type2))))))
+
 (define (attach-tag type-tag contents)
   (cons type-tag contents))
 (define (type-tag datum)
@@ -43,6 +96,21 @@
       (cdr datum)
       (error "Bad tagged datum -- CONTENTS" datum)))
 
+(define (coerce . args)
+  (define (coerce-to type arg)
+    (if (eq? (type-tag arg) type)
+        arg
+        (let ((raised-arg (raise arg)))
+          (if (eq? (type-tag arg) (type-tag raised-arg))
+            (error "Cannot coerce" (type-tag arg) 'to type)
+            (coerce-to type raised-arg)))))
+  (let ((greatest-type (car (sort (map type-tag args) is-greater-type))))
+    (map
+      (lambda (t) (coerce-to greatest-type t))
+      args)))
+
+; TODO: Use "coerce"
+; TODO: Try to raise the argument if the generic operation is not found for the type
 (define (apply-generic op . args)
   (let ((type-tags (map type-tag args)))
     (let ((proc (get op type-tags)))
@@ -292,19 +360,7 @@
 (newline)
 (display (raise x1))
 
-;TODO: Use coerce in apply-generic to raise the arguments to the most generic type
-(define (coerce . args)
-  (define (coerce-to type arg)
-    (if (eq? (type-tag arg) type)
-        arg
-        (let ((raised-arg (raise arg)))
-          (if (eq? (type-tag arg) (type-tag raised-arg))
-            (error "Cannot coerce" (type-tag arg) 'to type)
-            (coerce-to type raised-arg)))))
-  (let ((greatest-type (car (sort (map type-tag args) is-greater-type))))
-    (map
-      (lambda (t) (coerce-to greatest-type t))
-      args)))
+; Simplified example with the types a, b, c, d
 
 (define (make-a x)
   (attach-tag 'a x))
@@ -319,24 +375,12 @@
   (attach-tag 'd x))
 
 ; Type hierarchy from the most specific to the most generic type
-(define type-tower-hierarchy '(c b a))
-
-(define (index-of-element elements element)
-  (define (index-in-sublist elements element current-index)
-    (cond ((null? elements) -1)
-          ((eq? (car elements) element) current-index)
-          (else (index-in-sublist (cdr elements) element (+ 1 current-index)))))
-  (index-in-sublist elements element 0))
-
-(define (is-greater-type type1 type2)
-  (> (index-of-element type-tower-hierarchy type1) (index-of-element type-tower-hierarchy type2)))
+;(define type-tower-hierarchy '(c b a))
 
 (put 'raise '(b)
   (lambda (x) (make-a x)))
 (put 'raise '(c)
   (lambda (x) (make-b x)))
-(put 'raise '(d)
-  (lambda (x) (make-d x)))
 
 (newline)
 (display (raise (make-b 1)))
