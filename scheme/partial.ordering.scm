@@ -19,12 +19,12 @@
         (make-segment
           (segment-start first)
           (segment-end second)
-          (append (segment-elements first) (segment-elements second))))
+          (append (segment-elements first) (cdr (segment-elements second)))))
       ((eq? (segment-end second) (segment-start first))
         (make-segment
           (segment-start second)
           (segment-end first)
-          (append (segment-elements second) (segment-elements first))))
+          (append (segment-elements second) (cdr (segment-elements first)))))
       (else error "Cannot merge segments" first second)))
 
   (define (merge-segments segments)
@@ -33,11 +33,32 @@
         segments
         (merge-segments merged-segments))))
   (define (try-merging segments)
-    ;TODO: Generate the list of all possible segment pairs, find a pair that is mergable, cons the merged pair with the rest of the segments
-    segments
-  )
+    (let ((segment-pairs (pairs-of segments)))
+      (let ((mergable-segment-pair
+             (find (lambda (pair)
+                     (segments-can-be-merged (car pair) (cdr pair)))
+                   segment-pairs)))
+        (if mergable-segment-pair
+            (let ((first-segment (car mergable-segment-pair))
+                  (second-segment (cdr mergable-segment-pair)))
+              (let ((rest-of-segments
+                     (filter
+                       (lambda (segment)
+                         (and (not (eq? segment first-segment)) (not (eq? segment second-segment))))
+                       segments)))
+                (cons (merge-two-segments first-segment second-segment) rest-of-segments)))
+            segments))))
   (let ((segments (map (lambda (relation) (make-segment (car relation) (cadr relation) relation)) relations)))
     (merge-segments segments)))
+
+(define (pairs-of list)
+  (define (pairs-with item rest-of-items)
+    (append
+      (map (lambda (x) (cons item x)) rest-of-items)
+      (pairs-of rest-of-items)))
+  (if (null? list)
+      '()
+      (pairs-with (car list) (cdr list))))
 
 (newline)
 (display (build-ordering items))
