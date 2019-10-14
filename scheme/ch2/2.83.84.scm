@@ -114,20 +114,10 @@
         (build-ordering
            (cons type-relation type-hierarchies))))
 
-(define-subtype-of 'c 'b)
-(define-subtype-of 'b 'a)
-
 ; TODO: Define the subtype relations when defining the "raise" operation
 (define-subtype-of 'integer 'rational)
 (define-subtype-of 'rational 'real)
 (define-subtype-of 'real 'complex)
-
-(set! type-hierarchies
-        (build-ordering type-hierarchies))
-
-(newline)
-(display type-hierarchies)
-(newline)
 
 (define (exists? elements predicate)
   (cond ((null? elements) #f)
@@ -423,6 +413,9 @@
 
 (define (make-d x)
   (attach-tag 'd x))
+
+(define-subtype-of 'c 'b)
+(define-subtype-of 'b 'a)
 
 ; Type hierarchy from the most specific to the most generic type
 ;(define type-tower-hierarchy '(c b a))
