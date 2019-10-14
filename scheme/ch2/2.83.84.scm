@@ -32,40 +32,102 @@
 
 (define-put-get)
 
-; (list
-;   '(numbers (integer rational real complex))
-;   '(test (c b a)))
+(define (attach-tag type-tag contents)
+  (cons type-tag contents))
+(define (type-tag datum)
+  (if (pair? datum)
+      (car datum)
+      (error "Bad tagged datum -- TYPE-TAG" datum)))
+(define (contents datum)
+  (if (pair? datum)
+      (cdr datum)
+      (error "Bad tagged datum -- CONTENTS" datum)))
+
+(define (pairs-of list)
+  (define (pairs-with item rest-of-items)
+    (append
+      (map (lambda (x) (cons item x)) rest-of-items)
+      (pairs-of rest-of-items)))
+  (if (null? list)
+      '()
+      (pairs-with (car list) (cdr list))))
+
+(define (build-ordering relations)
+  (define (last-element list) (car (reverse list)))
+  (define (segment-start segment)
+    (car segment))
+  (define (segment-end segment)
+    (cadr segment))
+  (define (segment-elements segment)
+    (caddr segment))
+  (define (make-segment start end elements)
+    (list start end elements))
+  (define (segments-can-be-merged first second)
+    (or
+      (eq? (segment-end first) (segment-start second))
+      (eq? (segment-end second) (segment-start first))))
+  (define (merge-two-segments first second)
+    (cond
+      ((eq? (segment-end first) (segment-start second))
+        (make-segment
+          (segment-start first)
+          (segment-end second)
+          (append (segment-elements first) (cdr (segment-elements second)))))
+      ((eq? (segment-end second) (segment-start first))
+        (make-segment
+          (segment-start second)
+          (segment-end first)
+          (append (segment-elements second) (cdr (segment-elements first)))))
+      (else error "Cannot merge segments" first second)))
+
+  (define (merge-segments segments)
+    (let ((merged-segments (try-merging segments)))
+      (if (= (length merged-segments) (length segments))
+        segments
+        (merge-segments merged-segments))))
+  (define (try-merging segments)
+    (let ((segment-pairs (pairs-of segments)))
+      (let ((mergable-segment-pair
+             (find (lambda (pair)
+                     (segments-can-be-merged (car pair) (cdr pair)))
+                   segment-pairs)))
+        (if mergable-segment-pair
+            (let ((first-segment (car mergable-segment-pair))
+                  (second-segment (cdr mergable-segment-pair)))
+              (let ((rest-of-segments
+                     (filter
+                       (lambda (segment)
+                         (and (not (eq? segment first-segment)) (not (eq? segment second-segment))))
+                       segments)))
+                (cons (merge-two-segments first-segment second-segment) rest-of-segments)))
+            segments))))
+  (define (to-relations segments)
+    (map segment-elements segments))
+  (let ((segments (map (lambda (relation) (make-segment (car relation) (last-element relation) relation)) relations)))
+    (to-relations (merge-segments segments))))
+
+; (list '(integer rational real complex) '(test (c b a))
 (define type-hierarchies '())
 
-(define (make-hierarchy name types)
-  (list name types))
+(define (define-subtype-of . type-relation)
+  (set! type-hierarchies
+        (build-ordering
+           (cons type-relation type-hierarchies))))
 
-(define (hierarchy-name hierarchy)
-  (car hierarchy))
+(define-subtype-of 'c 'b)
+(define-subtype-of 'b 'a)
 
-(define (hierarchy-types hierarchy)
-  (cadr hierarchy))
+; TODO: Define the subtype relations when defining the "raise" operation
+(define-subtype-of 'integer 'rational)
+(define-subtype-of 'rational 'real)
+(define-subtype-of 'real 'complex)
 
-; TODO: Produce full ordering from partial ordering when adding new types to a particular hierarchy
-(define (add-type-to-hierarchy to-hierarchy-name type)
-  (let ((found-hierarchy
-          (filter (lambda (current-hierarchy) (eq? (hierarchy-name current-hierarchy) to-hierarchy-name)) type-hierarchies))
-        (other-hierarchies
-          (filter (lambda (current-hierarchy) (not (eq? (hierarchy-name current-hierarchy) to-hierarchy-name))) type-hierarchies)))
-    (let ((updated-hierarchy
-            (make-hierarchy to-hierarchy-name
-                            (if (not (null? found-hierarchy))
-                                (cons type (hierarchy-types (car found-hierarchy)))
-                                (list type)))))
-      (set! type-hierarchies (cons updated-hierarchy other-hierarchies)))))
+(set! type-hierarchies
+        (build-ordering type-hierarchies))
 
-(add-type-to-hierarchy 'test 'a)
-(add-type-to-hierarchy 'test 'b)
-(add-type-to-hierarchy 'test 'c)
-(add-type-to-hierarchy 'numbers 'complex)
-(add-type-to-hierarchy 'numbers 'real)
-(add-type-to-hierarchy 'numbers 'rational)
-(add-type-to-hierarchy 'numbers 'integer)
+(newline)
+(display type-hierarchies)
+(newline)
 
 (define (exists? elements predicate)
   (cond ((null? elements) #f)
@@ -82,19 +144,7 @@
 (define (is-greater-type type1 type2)
   (exists? type-hierarchies
     (lambda (type-hierarchy)
-      (let ((types (hierarchy-types type-hierarchy)))
-        (> (index-of-element types type1) (index-of-element types type2))))))
-
-(define (attach-tag type-tag contents)
-  (cons type-tag contents))
-(define (type-tag datum)
-  (if (pair? datum)
-      (car datum)
-      (error "Bad tagged datum -- TYPE-TAG" datum)))
-(define (contents datum)
-  (if (pair? datum)
-      (cdr datum)
-      (error "Bad tagged datum -- CONTENTS" datum)))
+      (> (index-of-element type-hierarchy type1) (index-of-element type-hierarchy type2)))))
 
 (define (coerce . args)
   (define (coerce-to type arg)
