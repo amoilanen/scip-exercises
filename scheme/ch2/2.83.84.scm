@@ -10,11 +10,11 @@
   (define (entry-value entry) (cdr entry))
 
   (define (put-global key1 key2 value)
-    (define (put-local key entries)
+    (define (put-local key value entries)
       (cond ((null? entries) (list (make-entry key value)))
             ((equal? (entry-key (car entries)) key) (cons (make-entry key value) (cdr entries)))
-            (else (cons (car entries) (put-local key (cdr entries))))))
-    (set! global-entries (put-local (cons key1 key2) global-entries)))
+            (else (cons (car entries) (put-local key value (cdr entries))))))
+    (set! global-entries (put-local (cons key1 key2) value global-entries)))
 
   (define (get-global key1 key2)
     (define (get-local key entries)
@@ -293,7 +293,7 @@
 ;
 (define (install-real-package)
   (define (tag x)
-    (attach-tag 'real x))    
+    (attach-tag 'real x))
   (put 'add '(real real)
        (lambda (x y) (tag (+ x y))))
   (put 'sub '(real real)
