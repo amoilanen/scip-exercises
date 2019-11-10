@@ -114,11 +114,6 @@
         (build-ordering
            (cons type-relation type-hierarchies))))
 
-; TODO: Define the subtype relations when defining the "raise" operation
-(define-subtype-of 'integer 'rational)
-(define-subtype-of 'rational 'real)
-(define-subtype-of 'real 'complex)
-
 (define (exists? elements predicate)
   (cond ((null? elements) #f)
         ((predicate (car elements)) #t)
@@ -149,16 +144,15 @@
       (lambda (t) (coerce-to greatest-type t))
       args)))
 
-; TODO: Use "coerce"
-; TODO: Try to raise the argument if the generic operation is not found for the type
 (define (apply-generic op . args)
-  (let ((type-tags (map type-tag args)))
-    (let ((proc (get op type-tags)))
-      (if proc
-          (apply proc (map contents args))
-          (error
-            "No method for these types -- APPLY-GENERIC"
-            (list op type-tags))))))
+  (let ((coerced-args (apply coerce args)))
+    (let ((type-tags (map type-tag coerced-args)))
+      (let ((proc (get op type-tags)))
+        (if proc
+            (apply proc (map contents coerced-args))
+            (error
+              "No method for these types -- APPLY-GENERIC"
+              (list op type-tags)))))))
 
 ;
 ; Complex numbers
@@ -282,6 +276,7 @@
        (lambda (n) (tag (inexact->exact n))))
   (define (integer->rational n)
     (make-rational n 1))
+  (define-subtype-of 'integer 'rational)
   (put 'raise '(integer) integer->rational)
 'done)
 
@@ -306,6 +301,7 @@
        (lambda (x) (tag (exact->inexact x))))
   (define (real->complex x)
     (make-complex-from-real-imag x 0))
+  (define-subtype-of 'real 'complex)
   (put 'raise '(real) real->complex)
 'done)
 
@@ -353,6 +349,7 @@
     (let ((n (car r))
           (d (cdr r)))
         (make-real (/ n d))))
+  (define-subtype-of 'rational 'real)
   (put 'raise '(rational) rational->real)
 'done)
 (define (make-rational n d)
@@ -400,6 +397,10 @@
 (newline)
 (display (raise x1))
 
+; Automatically raise to the most generic type
+(newline)
+(display (add n1 c1)) ; 3 + 2i
+
 ; Simplified example with the types a, b, c, d
 
 (define (make-a x)
@@ -416,9 +417,6 @@
 
 (define-subtype-of 'c 'b)
 (define-subtype-of 'b 'a)
-
-; Type hierarchy from the most specific to the most generic type
-;(define type-tower-hierarchy '(c b a))
 
 (put 'raise '(b)
   (lambda (x) (make-a x)))
@@ -448,3 +446,4 @@
 ; Cannot coerce d to a
 ;(newline)
 ;(display (coerce (make-a 1) (make-d 2) (make-c 3))); '('(a 1) '(a 2) '(a 3))
+
