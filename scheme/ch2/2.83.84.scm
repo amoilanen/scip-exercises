@@ -23,7 +23,7 @@
             (else (get-local key (cdr entries)))))
     (let ((value (get-local (cons key1 key2) global-entries)))
       (if (null? value)
-        (error "Global lookup failed -- keys" key1 key2)
+        #f
         value)))
 
   (set! put put-global)
@@ -106,7 +106,7 @@
   (let ((segments (map (lambda (relation) (make-segment (car relation) (last-element relation) relation)) relations)))
     (to-relations (merge-segments segments))))
 
-; (list '(integer rational real complex) '(test (c b a))
+; (list '(integer rational real complex) '(c b a))
 (define type-hierarchies '())
 
 (define (define-subtype-of . type-relation)
@@ -150,9 +150,14 @@
       (let ((proc (get op type-tags)))
         (if proc
             (apply proc (map contents coerced-args))
-            (error
-              "No method for these types -- APPLY-GENERIC"
-              (list op type-tags)))))))
+            (let ((raised-args (map raise coerced-args)))
+              (if (eq?
+                      (type-tag (car coerced-args))
+                      (type-tag (car raised-args)))
+                (error
+                  "No method for these types -- APPLY-GENERIC"
+                  (list op type-tags))
+                (apply apply-generic (cons op raised-args)))))))))
 
 ;
 ; Complex numbers
@@ -400,6 +405,10 @@
 ; Automatically raise to the most generic type
 (newline)
 (display (add n1 c1)) ; 3 + 2i
+
+; Try raising the argument if the operation is not available on its type
+(newline)
+(display (real-part n1)) ; 2
 
 ; Simplified example with the types a, b, c, d
 
