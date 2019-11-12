@@ -235,6 +235,10 @@
   (define (div-complex z1 z2)
     (make-from-mag-ang (/ (magnitude z1) (magnitude z2))
                        (- (angle z1) (angle z2))))
+  (define (equ? z1 z2)
+    (and (eq? (real-part z1) (real-part z2)) (eq? (imag-part z1) (imag-part z2))))
+  (define (project z)
+    (make-real (real-part z)))
   ;; interface to rest of the system
   (define (tag z) (attach-tag 'complex z))
   (put 'real-part '(complex) real-part)
@@ -253,6 +257,8 @@
        (lambda (x y) (tag (make-from-real-imag x y))))
   (put 'make-from-mag-ang 'complex
        (lambda (r a) (tag (make-from-mag-ang r a))))
+  (put 'equ? '(complex complex) equ?)
+  (put 'project '(complex) project)
 'done)
 
 (define (real-part z) (apply-generic 'real-part z))
@@ -269,6 +275,10 @@
 (define (install-integer-package)
   (define (tag n)
     (attach-tag 'integer n))
+  (put 'equ? '(integer integer)
+       (lambda (x y) (= x y)))
+  (put 'project '(integer)
+       (lambda (x) x))
   (put 'add '(integer integer)
        (lambda (n m) (tag (+ n m))))
   (put 'sub '(integer integer)
@@ -294,6 +304,10 @@
 (define (install-real-package)
   (define (tag x)
     (attach-tag 'real x))
+  (put 'equ? '(real real)
+       (lambda (x y) (= x y)))
+  (put 'project '(real)
+       (lambda (x) (make-rational (floor x) 1))) ; TODO: Not only integer reals should be projectable into rationals!
   (put 'add '(real real)
        (lambda (x y) (tag (+ x y))))
   (put 'sub '(real real)
@@ -337,6 +351,10 @@
   (define (div-rat x y)
     (make-rat (* (numer x) (denom y))
               (* (denom x) (numer y))))
+  (define (equ? x y)
+    (and (eq? (numer x) (numer y)) (eq? (denom x) (denom y))))
+  (define (project x)
+    (make-integer (numer x)))
   ;; interface to rest of the system
   (define (tag x) (attach-tag 'rational x))
   (put 'add '(rational rational)
@@ -356,6 +374,8 @@
         (make-real (/ n d))))
   (define-subtype-of 'rational 'real)
   (put 'raise '(rational) rational->real)
+  (put 'equ? '(rational rational) equ?)
+  (put 'project '(rational) project)
 'done)
 (define (make-rational n d)
   ((get 'make 'rational) n d))
@@ -365,6 +385,8 @@
 (define (mul x y) (apply-generic 'mul x y))
 (define (div x y) (apply-generic 'div x y))
 (define (raise x) (apply-generic 'raise x))
+(define (project x) (apply-generic 'project x))
+(define (equ? x y) (apply-generic 'equ? x y))
 
 (install-integer-package)
 (install-real-package)
@@ -456,3 +478,19 @@
 ;(newline)
 ;(display (coerce (make-a 1) (make-d 2) (make-c 3))); '('(a 1) '(a 2) '(a 3))
 
+(define (drop x)
+  (let ((projection (project x)))
+    (let ((raised-projection (raise projection)))
+      (if (equ? projection raised-projection)
+        (drop projection)
+        x))))
+
+(newline)
+(display (drop
+  (make-complex-from-real-imag
+    3.4
+    0)))
+
+(newline)
+(display (drop
+  (make-complex-from-real-imag 2 3)))
