@@ -236,7 +236,7 @@
     (make-from-mag-ang (/ (magnitude z1) (magnitude z2))
                        (- (angle z1) (angle z2))))
   (define (equ? z1 z2)
-    (and (eq? (real-part z1) (real-part z2)) (eq? (imag-part z1) (imag-part z2))))
+    (and (= (real-part z1) (real-part z2)) (= (imag-part z1) (imag-part z2))))
   (define (project z)
     (make-real (real-part z)))
   ;; interface to rest of the system
@@ -278,7 +278,7 @@
   (put 'equ? '(integer integer)
        (lambda (x y) (= x y)))
   (put 'project '(integer)
-       (lambda (x) x))
+       (lambda (x) (make-integer x)))
   (put 'add '(integer integer)
        (lambda (n m) (tag (+ n m))))
   (put 'sub '(integer integer)
@@ -352,7 +352,7 @@
     (make-rat (* (numer x) (denom y))
               (* (denom x) (numer y))))
   (define (equ? x y)
-    (and (eq? (numer x) (numer y)) (eq? (denom x) (denom y))))
+    (and (= (numer x) (numer y)) (= (denom x) (denom y))))
   (define (project x)
     (make-integer (numer x)))
   ;; interface to rest of the system
@@ -481,16 +481,15 @@
 (define (drop x)
   (let ((projection (project x)))
     (let ((raised-projection (raise projection)))
-      (if (equ? projection raised-projection)
+
+      (if (and (equ? x raised-projection) (not (eq? (type-tag projection) (type-tag x))))
         (drop projection)
         x))))
 
 (newline)
 (display (drop
-  (make-complex-from-real-imag
-    3.4
-    0)))
+  (make-complex-from-real-imag 2 3)))
 
 (newline)
 (display (drop
-  (make-complex-from-real-imag 2 3)))
+  (make-complex-from-real-imag 3 0)))
