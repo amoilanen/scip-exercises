@@ -132,6 +132,10 @@
       (> (index-of-element type-hierarchy type1) (index-of-element type-hierarchy type2)))))
 
 (define (coerce . args)
+  ;(newline)
+  ;(display 'coerce)
+  ;(newline)
+  ;(display args)
   (define (coerce-to type arg)
     (if (eq? (type-tag arg) type)
         arg
@@ -144,12 +148,32 @@
       (lambda (t) (coerce-to greatest-type t))
       args)))
 
+(define (drop x)
+  ;(newline)
+  ;(display 'drop)
+  ;(newline)
+  ;(display x)
+  (if (pair? x)
+    (let ((projection (project x)))
+      (let ((raised-projection (raise projection)))
+        (if (and (equ? x raised-projection) (not (eq? (type-tag projection) (type-tag x))))
+          (drop projection)
+          x)))
+    x))
+
 (define (apply-generic op . args)
+  ;(newline)
+  ;(display 'apply-generic)
+  ;(newline)
+  ;(display (cons op args))
   (let ((coerced-args (apply coerce args)))
     (let ((type-tags (map type-tag coerced-args)))
       (let ((proc (get op type-tags)))
         (if proc
-            (apply proc (map contents coerced-args))
+            (let ((result (apply proc (map contents coerced-args))))
+              (if (or (eq? op 'raise) (eq? op 'project) (eq? op 'equ?))
+                result
+                (drop result)))
             (let ((raised-args (map raise coerced-args)))
               (if (eq?
                       (type-tag (car coerced-args))
@@ -307,7 +331,10 @@
   (put 'equ? '(real real)
        (lambda (x y) (= x y)))
   (put 'project '(real)
-       (lambda (x) (make-rational (floor x) 1))) ; TODO: Not only integer reals should be projectable into rationals!
+       (lambda (x)
+         (let ((r (rationalize (inexact->exact x) 1/100)))
+           (make-rational
+             (numerator r) (denominator r)))))
   (put 'add '(real real)
        (lambda (x y) (tag (+ x y))))
   (put 'sub '(real real)
@@ -478,14 +505,6 @@
 ;(newline)
 ;(display (coerce (make-a 1) (make-d 2) (make-c 3))); '('(a 1) '(a 2) '(a 3))
 
-(define (drop x)
-  (let ((projection (project x)))
-    (let ((raised-projection (raise projection)))
-
-      (if (and (equ? x raised-projection) (not (eq? (type-tag projection) (type-tag x))))
-        (drop projection)
-        x))))
-
 (newline)
 (display (drop
   (make-complex-from-real-imag 2 3)))
@@ -493,3 +512,19 @@
 (newline)
 (display (drop
   (make-complex-from-real-imag 3 0)))
+
+;2.85 apply-generic should use drop
+(define 1plusi (make-complex-from-real-imag 1 1))
+(define 1minusi (make-complex-from-real-imag 1 -1))
+
+(newline)
+(display '(apply-generic drop))
+
+(newline)
+(display (add 1plusi 1minusi))
+
+(newline)
+(display (mul 1plusi 1minusi))
+
+(newline)
+(display (sub 1plusi 1minusi))
