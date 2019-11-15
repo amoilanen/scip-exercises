@@ -145,17 +145,17 @@
   (define (magnitude z) (apply-generic 'magnitude z))
   (define (angle z) (apply-generic 'angle z))
   (define (add-complex z1 z2)
-    (make-from-real-imag (+ (real-part z1) (real-part z2))
-                         (+ (imag-part z1) (imag-part z2))))
+    (make-from-real-imag (add (real-part z1) (real-part z2))
+                         (add (imag-part z1) (imag-part z2))))
   (define (sub-complex z1 z2)
-    (make-from-real-imag (- (real-part z1) (real-part z2))
-                         (- (imag-part z1) (imag-part z2))))
+    (make-from-real-imag (sub (real-part z1) (real-part z2))
+                         (sub (imag-part z1) (imag-part z2))))
   (define (mul-complex z1 z2)
-    (make-from-mag-ang (* (magnitude z1) (magnitude z2))
-                       (+ (angle z1) (angle z2))))
+    (make-from-mag-ang (mul (magnitude z1) (magnitude z2))
+                       (add (angle z1) (angle z2))))
   (define (div-complex z1 z2)
-    (make-from-mag-ang (/ (magnitude z1) (magnitude z2))
-                       (- (angle z1) (angle z2))))
+    (make-from-mag-ang (div (magnitude z1) (magnitude z2))
+                       (sub (angle z1) (angle z2))))
   ;; interface to rest of the system
   (define (tag z) (attach-tag 'complex z))
   (put 'real-part '(complex) real-part)
@@ -204,4 +204,8 @@
 (newline)
 (display (add c1 c2)) ; 5 + 7i
 
-; TODO: Implement having coefficients of complex numbers being any numbers
+(define c3 (make-complex-from-real-imag (make-rational 3 4) (make-rational 3 7)))
+(define c4 (make-complex-from-real-imag (make-rational 1 4) (make-rational 4 7)))
+
+(newline)
+(display (add c3 c4))
