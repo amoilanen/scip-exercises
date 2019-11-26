@@ -184,6 +184,15 @@
     (cons variable term-list))
   (define (variable p) (car p))
   (define (term-list p) (cdr p))
+  (define (zero? p)
+    (define (zero-terms? terms)
+      (if (empty-termlist? terms)
+        #t
+        (let ((t1 (first-term terms)))
+          (if (= 0 (coeff t1))
+            (zero-terms? (rest-terms terms))
+            #f))))
+    (zero-terms? (term-list p)))
   ;; interface to rest of the system
   (define (tag p) (attach-tag 'polynomial p))
   (put 'add '(polynomial polynomial) 
@@ -192,6 +201,7 @@
        (lambda (p1 p2) (tag (mul-poly p1 p2))))
   (put 'make 'polynomial
        (lambda (var terms) (tag (make-poly var terms))))
+  (put '=zero? '(polynomial) zero?)
 'done)
 
 (define (make-poly var terms)
@@ -210,6 +220,22 @@
 
 (define p1 (make-poly 'x (list '(2 1) '(1 2) '(0 1)))) ; x^2 + 2x + 1
 (define p2 (make-poly 'x (list '(3 1) '(2 2) '(0 1)))) ; x^3 + 2x^2 + 1
+(define p3 (make-poly 'x (list '(2 1) '(1 1)))) ; x^2 + x
 
 (newline)
-(display (add p1 p2))
+(display (add p1 p2)) ; (polynomial x (3 1) (2 3) (1 2) (0 2))
+
+(newline)
+(display (mul p1 p3)) ; (polynomial x (4 1) (3 3) (2 3) (1 1))
+
+(define p-zero1 (make-poly 'x '()))
+(define p-zero2 (make-poly 'x (list '(2 0) '(1 0) '(0 0))))
+
+(newline)
+(display (=zero? p-zero1)) ; #t
+
+(newline)
+(display (=zero? p-zero2)) ; #t
+
+(newline)
+(display (=zero? p1)) ; #f
