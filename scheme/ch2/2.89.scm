@@ -122,10 +122,23 @@
 ; Polynomials
 ;
 (define (install-polynomial-package)
+  (define (left-pad-list len value l)
+    (if (< (length l) len)
+      (left-pad-list len value (cons value l))
+    l))
+
   (define (adjoin-term term term-list)
-    (if (=zero? (coeff term))
-      term-list
-      (cons (coeff term) term-list)))
+    (let ((t1-length (length term))
+          (t2-length (length term-list))
+          (t1 term)
+          (t2 term-list))
+      (let ((max-length (max t1-length t2-length)))
+        (let ((padded-t1 (left-pad-list max-length 0 t1))
+              (padded-t2 (left-pad-list max-length 0 t2)))
+          (map
+            (lambda (t1-t2-el)
+              (+ (car t1-t2-el) (cadr t1-t2-el)))
+            (zip padded-t1 padded-t2))))))
   (define (the-empty-termlist) '())
   (define (first-term term-list)
     (let ((coeff (car term-list))
@@ -135,7 +148,7 @@
   (define (empty-termlist? term-list) (null? term-list))
   (define (make-term order coeff)
     (if (> order 0)
-      (let ((rest-of-coeffs (make-list (- order 1) 0)))
+      (let ((rest-of-coeffs (make-list order 0)))
       (cons coeff rest-of-coeffs))
       (list coeff)))
   (define (order term) (length (cdr term)))
