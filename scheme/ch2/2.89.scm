@@ -185,12 +185,12 @@
                     (mul (coeff t1) (coeff t2)))
           (mul-term-by-all-terms t1 (rest-terms L))))))
   (define (negate-terms terms)
-    (map
-      (lambda (term)
-        (make-term
-          (order term)
-          (- (coeff term))))
-      terms))
+    (if (empty-termlist? terms)
+      terms
+      (let ((t (first-term terms)))
+        (adjoin-term
+          (make-term (order t) (- (coeff t)))
+          (negate-terms (rest-terms terms))))))
   (define (variable? x) (symbol? x))
   (define (same-variable? v1 v2)
     (and (variable? v1) (variable? v2) (eq? v1 v2)))
@@ -217,14 +217,18 @@
   (define (variable p) (car p))
   (define (term-list p) (cdr p))
   (define (zero? p)
-    (every
-      (lambda (term)
-        (= 0 (coeff term)))
-      (term-list p)))
+    (define (zero-terms? terms)
+      (if (empty-termlist? terms)
+        #t
+        (let ((t (first-term terms)))
+          (and
+            (= (coeff t) 0)
+            (zero-terms? (rest-terms terms))))))
+    (zero-terms? (term-list p)))
   ;; interface to rest of the system
   (define (tag p) (attach-tag 'polynomial p))
   (put 'add '(polynomial polynomial) 
-       (lambda (p1 p2) (tag (add-poly p1 p2))))
+       (lambda (p1  p2) (tag (add-poly p1 p2))))
   (put 'sub '(polynomial polynomial) 
        (lambda (p1 p2) (tag (sub-poly p1 p2))))
   (put 'mul '(polynomial polynomial) 
@@ -258,20 +262,17 @@
 (newline)
 (display (mul p1 p3)) ; (polynomial x '(1 3 3 1 0))
 
-;(define p-zero1 (make-poly 'x '()))
-;(define p-zero2 (make-poly 'x (list '(2 0) '(1 0) '(0 0))))
+(define p-zero1 (make-poly 'x '()))
+(define p-zero2 (make-poly 'x (list 0 0 0)))
 
-;(newline)
-;(display (=zero? p-zero1)) ; #t
+(newline)
+(display (=zero? p-zero1)) ; #t
 
-;(newline)
-;(display (=zero? p-zero2)) ; #t
+(newline)
+(display (=zero? p-zero2)) ; #t
 
-;(newline)
-;(display (=zero? p1)) ; #f
+(newline)
+(display (=zero? p1)) ; #f
 
-;(newline)
-;(display (sub p2 p1)) ; (polynomial x (3 1) (2 1) (1 -2))
-
-; TODO: Re-implement =zero? and negate-terms to be independent of the representation of the polynomials,
-; update the solution for 2.87.88
+(newline)
+(display (sub p2 p1)) ; (polynomial x '(1 1 -2 0))
