@@ -163,13 +163,25 @@
          (make-term (+ (order t1) (order t2))
                     (mul (coeff t1) (coeff t2)))
          (mul-term-by-all-terms t1 (rest-terms L))))))
+  (define (reduce-terms empty-value combiner terms)
+    (if (empty-termlist? terms)
+      empty-value
+      (let ((t (first-term terms)))
+        (combiner t (reduce-terms empty-value combiner (rest-terms terms))))))
   (define (negate-terms terms)
-    (map
-      (lambda (term)
-        (make-term
-          (order term)
-          (- (coeff term))))
+    (reduce-terms
+      (the-empty-termlist)
+      (lambda (t acc)
+        (adjoin-term
+          (make-term (order t) (- (coeff t)))
+          acc))
       terms))
+  (define (zero? p)
+    (reduce-terms
+      #t
+      (lambda (t acc)
+        (and (= 0 (coeff t)) acc))
+      (term-list p)))
   (define (variable? x) (symbol? x))
   (define (same-variable? v1 v2)
     (and (variable? v1) (variable? v2) (eq? v1 v2)))
@@ -195,11 +207,6 @@
     (cons variable term-list))
   (define (variable p) (car p))
   (define (term-list p) (cdr p))
-  (define (zero? p)
-    (every
-      (lambda (term)
-        (= 0 (coeff term)))
-      (term-list p)))
   ;; interface to rest of the system
   (define (tag p) (attach-tag 'polynomial p))
   (put 'add '(polynomial polynomial) 
