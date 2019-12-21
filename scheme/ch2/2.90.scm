@@ -192,7 +192,9 @@
   (define the-empty-termlist
     (get 'the-empty-termlist 'term-dense))
   (define (make-term order coeff)
-    ((get 'make-term 'term-dense) order coeff))
+    (make-term-of-type 'term-dense order coeff))
+  (define (make-term-of-type term-type order coeff)
+    ((get 'make-term term-type) order coeff))
 
   (define (add-terms L1 L2) ; add-terms keeps the property of the term coefficients being sorted for the sparse representation
     (cond ((empty-termlist? L1) L2)
@@ -266,13 +268,13 @@
              (list p1 p2))))
   (define (make-poly variable term-list)
     (cons variable term-list))
-  (define (make-term-list term-pairs)
+  (define (make-term-list term-type term-pairs)
     (fold-right
       (lambda (term-pair L)
         (let ((term-order (car term-pair))
               (term-coeff (cadr term-pair)))
           (adjoin-term
-            (make-term term-order term-coeff)
+            (make-term-of-type term-type term-order term-coeff)
             L)))
       (the-empty-termlist)
       term-pairs))
@@ -290,13 +292,13 @@
   (put 'make 'polynomial
        (lambda (var terms) (tag (make-poly var terms))))
   (put 'make-term-list 'polynomial
-       (lambda (term-pairs) (make-term-list term-pairs)))
+       (lambda (term-type term-pairs) (make-term-list term-type term-pairs)))
 'done)
 
 (define (make-poly var terms)
   ((get 'make 'polynomial) var terms))
-(define (make-term-list term-pairs)
-  ((get 'make-term-list 'polynomial) term-pairs))
+(define (make-term-list term-type term-pairs)
+  ((get 'make-term-list 'polynomial) term-type term-pairs))
 
 (define (=zero? x) (apply-generic '=zero? x))
 (define (equ? x y) (apply-generic 'equ? x y))
@@ -309,13 +311,13 @@
 (install-rational-package)
 (install-polynomial-package)
 
-(define p1 (make-poly 'x (make-term-list (list '(2 1) '(1 2) '(0 1))))) ; x^2 + 2x + 1
+(define p1 (make-poly 'x (make-term-list 'term-dense (list '(2 1) '(1 2) '(0 1))))) ; x^2 + 2x + 1
 
 (newline)
 (display p1)
 
-(define p2 (make-poly 'x (make-term-list (list '(3 1) '(2 2) '(1 0) '(0 1))))) ; x^3 + 2x^2 + 1
-(define p3 (make-poly 'x (make-term-list (list '(2 1) '(1 1) '(0 0))))) ; x^2 + x
+(define p2 (make-poly 'x (make-term-list 'term-dense (list '(3 1) '(2 2) '(1 0) '(0 1))))) ; x^3 + 2x^2 + 1
+(define p3 (make-poly 'x (make-term-list 'term-dense (list '(2 1) '(1 1) '(0 0))))) ; x^2 + x
 
 (newline)
 (display (add p1 p2)) ; (polynomial x term-dense '(1 3 2 2))
@@ -323,8 +325,8 @@
 (newline)
 (display (mul p1 p3)) ; (polynomial x term-dense '(1 3 3 1 0))
 
-(define p-zero1 (make-poly 'x (make-term-list '())))
-(define p-zero2 (make-poly 'x (make-term-list (list '(2 0) '(1 0) '(0 0)))))
+(define p-zero1 (make-poly 'x (make-term-list 'term-dense '())))
+(define p-zero2 (make-poly 'x (make-term-list 'term-dense (list '(2 0) '(1 0) '(0 0)))))
 
 (newline)
 (display (=zero? p-zero1)) ; #t
