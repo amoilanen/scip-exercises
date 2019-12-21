@@ -172,11 +172,46 @@
     (lambda (order coeff) (tag (make-term order coeff))))
 'done)
 
+(define (install-sparse-term-package)
+  (define (adjoin-term term term-list)
+    (if (=zero? (coeff term))
+      term-list
+      (cons term term-list)))
+  (define (the-empty-termlist) '())
+  (define (first-term term-list) (car term-list))
+  (define (rest-terms term-list) (cdr term-list))
+  (define (empty-termlist? term-list) (null? term-list))
+  (define (make-term order coeff) (list order coeff))
+  (define (order term) (car term))
+  (define (coeff term) (cadr term))
+
+  ;; interface to the rest of the system
+  (define (tag t) (attach-tag 'term-sparse t))
+
+  (put 'order '(term-sparse)
+    order)
+  (put 'coeff '(term-sparse)
+    coeff)
+  (put 'adjoin-term '(term-sparse term-sparse)
+    (lambda (t L) (tag (adjoin-term t L))))
+  (put 'first-term '(term-sparse)
+    (lambda (L) (tag (first-term L))))
+  (put 'rest-terms '(term-sparse)
+    (lambda (L) (tag (rest-terms L))))
+  (put 'empty-termlist? '(term-sparse)
+    empty-termlist?)
+  (put 'the-empty-termlist 'term-sparse
+    (lambda () (tag (the-empty-termlist))))
+  (put 'make-term 'term-sparse
+    (lambda (order coeff) (tag (make-term order coeff))))
+'done)
+
 ;
 ; Polynomials
 ;
 (define (install-polynomial-package)
   (install-dense-term-package)
+  (install-sparse-term-package)
   (define (order t)
     (apply-generic 'order t))
   (define (coeff t)
@@ -189,12 +224,12 @@
     (apply-generic 'rest-terms L))
   (define (empty-termlist? L)
     (apply-generic 'empty-termlist? L))
-  (define the-empty-termlist
-    (get 'the-empty-termlist 'term-dense))
-  (define (make-term order coeff)
-    (make-term-of-type 'term-dense order coeff))
-  (define (make-term-of-type term-type order coeff)
-    ((get 'make-term term-type) order coeff))
+  (define (the-empty-termlist term-type)
+    ((get 'the-empty-termlist term-type))) ; TODO: How to make this method generic and independent of representation?
+  (define (make-term term-type order coeff) ; TODO: Should it always produce a sparse term which will be converted if it is being operated with a dense term list to dense repr?
+    ((get 'make-term term-type) order coeff)) ; i.e. we probably should omit the term-type argument altogether?
+  ; Both issues with the need to pass term-type to make-term and the-empty-termlist will be resolved with the automatic term conversion in the
+  ; apply-generic function
 
   (define (add-terms L1 L2) ; add-terms keeps the property of the term coefficients being sorted for the sparse representation
     (cond ((empty-termlist? L1) L2)
@@ -209,21 +244,21 @@
                    t2 (add-terms L1 (rest-terms L2))))
                  (else
                   (adjoin-term
-                   (make-term (order t1)
+                   (make-term (type-tag t1) (order t1)
                               (add (coeff t1) (coeff t2)))
                    (add-terms (rest-terms L1)
                               (rest-terms L2)))))))))
   (define (mul-terms L1 L2)
     (if (empty-termlist? L1)
-      (the-empty-termlist)
+      L1
       (add-terms (mul-term-by-all-terms (first-term L1) L2) ; this part of 'mul-terms' keeps the property of the term coefficients being sorted for the sparse representation
                  (mul-terms (rest-terms L1) L2)))) ; also keeps the coefficients sorted (recursive property) for the sparse representation
   (define (mul-term-by-all-terms t1 L) ; mul-term-by-all-terms keeps the property of the term coefficients being sorted
     (if (empty-termlist? L)
-      (the-empty-termlist)
+      L
       (let ((t2 (first-term L)))
         (adjoin-term
-          (make-term (+ (order t1) (order t2))
+          (make-term (type-tag t1) (+ (order t1) (order t2))
                     (mul (coeff t1) (coeff t2)))
           (mul-term-by-all-terms t1 (rest-terms L))))))
   (define (reduce-terms empty-value combiner terms)
@@ -233,10 +268,10 @@
         (combiner t (reduce-terms empty-value combiner (rest-terms terms))))))
   (define (negate-terms terms)
     (reduce-terms
-      (the-empty-termlist)
+      (the-empty-termlist (type-tag terms))
       (lambda (t acc)
         (adjoin-term
-          (make-term (order t) (- (coeff t)))
+          (make-term (type-tag t) (order t) (- (coeff t)))
           acc))
       terms))
   (define (zero? p)
@@ -274,9 +309,9 @@
         (let ((term-order (car term-pair))
               (term-coeff (cadr term-pair)))
           (adjoin-term
-            (make-term-of-type term-type term-order term-coeff)
+            (make-term term-type term-order term-coeff)
             L)))
-      (the-empty-termlist)
+      (the-empty-termlist term-type)
       term-pairs))
   (define (variable p) (car p))
   (define (term-list p) (cdr p))
@@ -314,7 +349,7 @@
 (define p1 (make-poly 'x (make-term-list 'term-dense (list '(2 1) '(1 2) '(0 1))))) ; x^2 + 2x + 1
 
 (newline)
-(display p1)
+(display p1) ; (polynomial x term-dense 1 2 1)
 
 (define p2 (make-poly 'x (make-term-list 'term-dense (list '(3 1) '(2 2) '(1 0) '(0 1))))) ; x^3 + 2x^2 + 1
 (define p3 (make-poly 'x (make-term-list 'term-dense (list '(2 1) '(1 1) '(0 0))))) ; x^2 + x
@@ -340,7 +375,38 @@
 (newline)
 (display (sub p2 p1)) ; (polynomial x term-dense '(1 1 -2 0))
 
+(define q1 (make-poly 'x (make-term-list 'term-sparse (list '(2 1) '(1 2) '(0 1))))) ; x^2 + 2x + 1
+
+(newline)
+(display q1) ; (polynomial x term-sparse ((2 1) (1 2) (0 1)))
+
+(define q2 (make-poly 'x (make-term-list 'term-sparse (list '(3 1) '(2 2) '(1 0) '(0 1))))) ; x^3 + 2x^2 + 1
+(define q3 (make-poly 'x (make-term-list 'term-sparse (list '(2 1) '(1 1) '(0 0))))) ; x^2 + x
+
+(newline)
+(display (add q1 q2)) ; (polynomial x term-sparse '((3 1) (2 3) (1 2) (0 2)))
+
+(newline)
+(display (mul q1 q3)) ; (polynomial x term-sparse '((4 1) (3 3) (2 3) (1 1)))
+
+(define q-zero1 (make-poly 'x (make-term-list 'term-sparse '())))
+(define q-zero2 (make-poly 'x (make-term-list 'term-sparse (list '(2 0) '(1 0) '(0 0)))))
+
+(newline)
+(display (=zero? q-zero1)) ; #t
+
+(newline)
+(display (=zero? q-zero2)) ; #t
+
+(newline)
+(display (=zero? q1)) ; #f
+
+(newline)
+(display (sub q2 q1)) ; (polynomial x term-sparse '((3 1) (2 1) (1 -2))
+
 ; Possible to perform operations on term-dense - DONE
-; Possible to perform operations on poly-sparse
+; Possible to perform operations on poly-sparse - DONE
 ; Possible to perform operations on mixed term-dense and poly-sparse: poly-sparse converts to term-dense
 ; Auto-optimization of the represenation: term-dense auto-converts to poly-sparse if too many zeros
+; Make sure that the "install-polynomial-package" does not "know" too much about term representations: only the bare minimum,
+; try avoiding calling type-tag after auto-conversion between term-dense and term-sparse had been implemented
