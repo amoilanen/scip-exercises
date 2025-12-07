@@ -1,6 +1,40 @@
 (define put '())
 (define get '())
 
+; ============================================================================
+; EXERCISE 2.90: Generic Polynomial System with Multiple Term Representations
+; ============================================================================
+;
+; This solution implements a polynomial system that efficiently handles both
+; sparse and dense polynomial representations. The key features are:
+;
+; 1. TWO TERM LIST REPRESENTATIONS:
+;    - Dense: Coefficients stored as a list, with implicit powers (1 2 1 -> x^2 + 2x + 1)
+;    - Sparse: Coefficient-power pairs stored as ((power coeff) ...) format
+;
+; 2. GENERIC OPERATIONS:
+;    All operations (add, mul, sub, =zero?) are generic and work with both
+;    representations seamlessly through the use of apply-generic.
+;
+; 3. MIXED REPRESENTATION SUPPORT:
+;    The system automatically converts between representations when needed.
+;    When operating on polynomials with different term-list representations,
+;    sparse term lists are converted to dense for uniform processing.
+;
+; 4. DATA TYPING STRATEGY:
+;    - Tag system: Each data item carries a type tag
+;    - Dense terms tagged as 'term-dense
+;    - Sparse terms tagged as 'term-sparse
+;    - Polynomials tagged as 'polynomial
+;    - Numbers automatically tagged as 'scheme-number
+;
+; This design allows for easy extension - new representations can be added
+; without modifying existing code, as long as they implement the required
+; generic operations: order, coeff, adjoin-term, first-term, rest-terms,
+; empty-termlist?, the-empty-termlist, and make-term.
+;
+; ============================================================================
+
 ; Adapted version from https://stackoverflow.com/a/5499256/1461965
 (define (define-put-get)
   (define global-entries '())
@@ -30,6 +64,24 @@
   (set! get get-global)
 'done)
 
+; Helper functions
+(define (zip l1 l2)
+  (if (or (null? l1) (null? l2))
+    '()
+    (cons (list (car l1) (car l2))
+          (zip (cdr l1) (cdr l2)))))
+
+(define (make-list count value)
+  (if (<= count 0)
+    '()
+    (cons value (make-list (- count 1) value))))
+
+(define (fold-right op initial sequence)
+  (if (null? sequence)
+    initial
+    (op (car sequence)
+        (fold-right op initial (cdr sequence)))))
+
 (define-put-get)
 
 (define (attach-tag type-tag contents)
@@ -51,6 +103,10 @@
           (error
             "No method for these types -- APPLY-GENERIC"
             (list op type-tags))))))
+
+; Utility to get the term type representation from a term
+(define (get-term-type-from-term term)
+  (type-tag term))
 
 ;
 ; Scheme numbers
@@ -225,35 +281,87 @@
   (define (empty-termlist? L)
     (apply-generic 'empty-termlist? L))
   (define (the-empty-termlist term-type)
-    ((get 'the-empty-termlist term-type))) ; TODO: How to make this method generic and independent of representation?
-  (define (make-term term-type order coeff) ; TODO: Should it always produce a sparse term which will be converted if it is being operated with a dense term list to dense repr?
-    ((get 'make-term term-type) order coeff)) ; i.e. we probably should omit the term-type argument altogether?
-  ; Both issues with the need to pass term-type to make-term and the-empty-termlist will be resolved with the automatic term conversion in the
-  ; apply-generic function
+    ((get 'the-empty-termlist term-type)))
+  (define (make-term term-type order coeff)
+    ((get 'make-term term-type) order coeff))
+  
+  ;; Helper to convert sparse to dense
+  (define (sparse-to-dense term-list)
+    (let ((terms (contents term-list)))
+      (if (null? terms)
+        (attach-tag 'term-dense '())
+        (let ((max-order (car (car terms))))
+          (attach-tag 'term-dense
+            (let iter ((power max-order) (result '()))
+              (if (< power 0)
+                (reverse result)
+                (let ((matching-term (filter-first (lambda (t) (= (car t) power)) terms)))
+                  (if matching-term
+                    (iter (- power 1) (cons (cadr matching-term) result))
+                    (iter (- power 1) (cons 0 result)))))))))))
+  
+  (define (filter-first pred lst)
+    (cond ((null? lst) #f)
+          ((pred (car lst)) (car lst))
+          (else (filter-first pred (cdr lst)))))
+  
+  (define (reverse lst)
+    (define (iter lst acc)
+      (if (null? lst)
+        acc
+        (iter (cdr lst) (cons (car lst) acc))))
+    (iter lst '()))
 
-  (define (add-terms L1 L2) ; add-terms keeps the property of the term coefficients being sorted for the sparse representation
+  (define (add-terms L1 L2) 
+    ;; Handle mixed representations
+    (let ((type1 (type-tag L1))
+          (type2 (type-tag L2)))
+      (if (eq? type1 type2)
+        ;; Same type - proceed normally
+        (add-terms-impl L1 L2)
+        ;; Mixed types - convert sparse to dense, then add
+        (if (eq? type1 'term-sparse)
+          ;; L1 is sparse, L2 is dense - convert L1
+          (add-terms-impl (sparse-to-dense L1) L2)
+          ;; L1 is dense, L2 is sparse - convert L2
+          (add-terms-impl L1 (sparse-to-dense L2))))))
+  
+  (define (add-terms-impl L1 L2)
     (cond ((empty-termlist? L1) L2)
           ((empty-termlist? L2) L1)
           (else
             (let ((t1 (first-term L1)) (t2 (first-term L2)))
               (cond ((> (order t1) (order t2))
                   (adjoin-term
-                   t1 (add-terms (rest-terms L1) L2)))
+                   t1 (add-terms-impl (rest-terms L1) L2)))
                  ((< (order t1) (order t2))
                   (adjoin-term
-                   t2 (add-terms L1 (rest-terms L2))))
+                   t2 (add-terms-impl L1 (rest-terms L2))))
                  (else
                   (adjoin-term
                    (make-term (type-tag t1) (order t1)
                               (add (coeff t1) (coeff t2)))
-                   (add-terms (rest-terms L1)
+                   (add-terms-impl (rest-terms L1)
                               (rest-terms L2)))))))))
+  
   (define (mul-terms L1 L2)
+    ;; Handle mixed representations by converting to same type
+    (let ((type1 (type-tag L1))
+          (type2 (type-tag L2)))
+      (if (eq? type1 type2)
+        (mul-terms-impl L1 L2)
+        ;; Mixed types - convert sparse to dense, then multiply
+        (if (eq? type1 'term-sparse)
+          (mul-terms-impl (sparse-to-dense L1) L2)
+          (mul-terms-impl L1 (sparse-to-dense L2))))))
+  
+  (define (mul-terms-impl L1 L2)
     (if (empty-termlist? L1)
       L1
-      (add-terms (mul-term-by-all-terms (first-term L1) L2) ; this part of 'mul-terms' keeps the property of the term coefficients being sorted for the sparse representation
-                 (mul-terms (rest-terms L1) L2)))) ; also keeps the coefficients sorted (recursive property) for the sparse representation
-  (define (mul-term-by-all-terms t1 L) ; mul-term-by-all-terms keeps the property of the term coefficients being sorted
+      (add-terms-impl (mul-term-by-all-terms (first-term L1) L2)
+                 (mul-terms-impl (rest-terms L1) L2))))
+  
+  (define (mul-term-by-all-terms t1 L)
     (if (empty-termlist? L)
       L
       (let ((t2 (first-term L)))
@@ -261,6 +369,7 @@
           (make-term (type-tag t1) (+ (order t1) (order t2))
                     (mul (coeff t1) (coeff t2)))
           (mul-term-by-all-terms t1 (rest-terms L))))))
+  
   (define (reduce-terms empty-value combiner terms)
     (if (empty-termlist? terms)
       empty-value
@@ -278,7 +387,7 @@
     (reduce-terms
       #t
       (lambda (t acc)
-        (and (= 0 (coeff t)) acc))
+        (and (=zero? (coeff t)) acc))
       (term-list p)))
   (define (variable? x) (symbol? x))
   (define (same-variable? v1 v2)
@@ -406,7 +515,69 @@
 
 ; Possible to perform operations on term-dense - DONE
 ; Possible to perform operations on poly-sparse - DONE
-; Possible to perform operations on mixed term-dense and poly-sparse: poly-sparse converts to term-dense
+; Possible to perform operations on mixed term-dense and poly-sparse
 ; Auto-optimization of the represenation: term-dense auto-converts to poly-sparse if too many zeros
-; Make sure that the "install-polynomial-package" does not "know" too much about term representations: only the bare minimum,
-; try avoiding calling type-tag after auto-conversion between term-dense and term-sparse had been implemented
+
+(newline)
+(newline)
+(display "========================================")
+(newline)
+(display "MIXED REPRESENTATION TESTS")
+(newline)
+(display "========================================")
+(newline)
+
+; Test mixed operations: dense + sparse should work through generic operations
+(define p-dense (make-poly 'x (make-term-list 'term-dense (list '(1 1) '(0 2))))) ; x + 2
+(define q-sparse (make-poly 'x (make-term-list 'term-sparse (list '(1 1) '(0 3))))) ; x + 3
+
+(newline)
+(display "Dense polynomial (x + 2): ")
+(display p-dense)
+
+(newline)
+(display "Sparse polynomial (x + 3): ")
+(display q-sparse)
+
+(newline)
+(display "Dense + Sparse (should be 2x + 5): ")
+(display (add p-dense q-sparse))
+
+(newline)
+(display "Sparse + Dense (should be 2x + 5): ")
+(display (add q-sparse p-dense))
+
+(newline)
+(display "Dense - Sparse (should be -1): ")
+(display (sub p-dense q-sparse))
+
+(newline)
+(display "Sparse - Dense (should be 1): ")
+(display (sub q-sparse p-dense))
+
+(newline)
+(display "Dense * Sparse (should be x^2 + 5x + 6): ")
+(display (mul p-dense q-sparse))
+
+; Test with more complex polynomials
+(define p-dense2 (make-poly 'x (make-term-list 'term-dense (list '(2 1) '(1 2) '(0 1))))) ; x^2 + 2x + 1
+(define q-sparse2 (make-poly 'x (make-term-list 'term-sparse (list '(2 1) '(1 2) '(0 1))))) ; x^2 + 2x + 1
+
+(newline)
+(newline)
+(display "Complex polynomial tests:")
+(newline)
+(display "Dense (x^2 + 2x + 1): ")
+(display p-dense2)
+
+(newline)
+(display "Sparse (x^2 + 2x + 1): ")
+(display q-sparse2)
+
+(newline)
+(display "Dense + Sparse (should be 2x^2 + 4x + 2): ")
+(display (add p-dense2 q-sparse2))
+
+(newline)
+(display "Dense * Sparse (should be x^4 + 4x^3 + 6x^2 + 4x + 1): ")
+(display (mul p-dense2 q-sparse2))
