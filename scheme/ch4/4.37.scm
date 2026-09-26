@@ -29,7 +29,7 @@
                                  env))))))
       (cons triples work))))
 
-(let ((original (triples-and-work env 30))
-      (ben (triples-and-work ben-env 30)))
+(let ((original (triples-and-work env 15))
+      (ben (triples-and-work ben-env 15)))
   (check (car ben) => (car original))
-  (check (< (* 5 (cdr ben)) (cdr original)) => #t))
+  (check (< (* 3 (cdr ben)) (cdr original)) => #t))

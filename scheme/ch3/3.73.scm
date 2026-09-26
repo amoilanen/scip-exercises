@@ -13,7 +13,9 @@
   s)
 
 (define (streams-close? tolerance)
-  (lambda (xs ys) (every (approx= tolerance) xs ys)))
+  (lambda (xs ys)
+    (and (= (length xs) (length ys))
+         (every (approx= tolerance) xs ys))))
 
 ;; A constant current of 1 charges the capacitor linearly: v = 5 + t.
 (check (stream-head (RC1 (constant-stream 1) 0) 4)

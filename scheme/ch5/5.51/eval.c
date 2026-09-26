@@ -54,3 +54,83 @@ void init_evaluator(void)
     symbol.else_ = intern("else");
     symbol.ok = intern("ok");
 }
+
+/*** Syntax ***/
+
+static bool is_tagged_list(Value exp, Value tag)
+{
+    return is_pair(exp) && is_eq(car(exp), tag);
+}
+
+static bool is_self_evaluating(Value exp)
+{
+    return is_number(exp) || is_string(exp) || is_boolean(exp);
+}
+
+static Value make_lambda(Value parameters, Value body)
+{
+    return cons(symbol.lambda, cons(parameters, body));
+}
+
+static Value lambda_parameters(Value exp) { return cadr(exp); }
+static Value lambda_body(Value exp) { return cddr(exp); }
+
+static Value definition_variable(Value exp)
+{
+    return is_symbol(cadr(exp)) ? cadr(exp) : caadr(exp);
+}
+
+static Value definition_value(Value exp)
+{
+    if (is_symbol(cadr(exp)))
+        return caddr(exp);
+    return make_lambda(cdar(cdr(exp)), cddr(exp));
+}
+
+static bool has_alternative(Value exp) { return !is_null(cdddr(exp)); }
+
+static Value reverse_in_place(Value list)
+{
+    Value reversed = EMPTY_LIST;
+    while (is_pair(list)) {
+        Value rest = cdr(list);
+        set_cdr(list, reversed);
+        reversed = list;
+        list = rest;
+    }
+    return reversed;
+}
+
+/* (let ((v e) ...) body ...) is ((lambda (v ...) body ...) e ...) */
+static Value let_to_combination(Value exp)
+{
+    Value bindings = cadr(exp);
+    Value variables = EMPTY_LIST, operands = EMPTY_LIST;
+    protect(&exp);
+    protect(&bindings);
+    protect(&variables);
+    protect(&operands);
+    for (; is_pair(bindings); bindings = cdr(bindings)) {
+        variables = cons(caar(bindings), variables);
+        operands = cons(cadr(car(bindings)), operands);
+    }
+    Value lambda = make_lambda(reverse_in_place(variables), cddr(exp));
+    Value combination = cons(lambda, reverse_in_place(operands));
+    unprotect(4);
+    return combination;
+}
+
+/* A compound procedure is a cell holding its lambda expression and the
+ * environment it was made in. */
+static Value make_procedure(Value lambda, Value env)
+{
+    return make_cell(TYPE_PROCEDURE, lambda, env);
+}
+
+static Value procedure_parameters(Value p)
+{
+    return lambda_parameters(cell_car(p));
+}
+
+static Value procedure_body(Value p) { return lambda_body(cell_car(p)); }
+static Value procedure_environment(Value p) { return cell_cdr(p); }
