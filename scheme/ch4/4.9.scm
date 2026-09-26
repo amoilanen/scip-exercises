@@ -1,0 +1,82 @@
+(load "lib/check.scm")
+(load "ch4/lib/mceval.scm")
+
+;; (while test body ...) repeats body while test is true.
+;; (for (var from to) body ...) runs body for var = from, from + 1, ..., to.
+;; Both evaluate to false. The user's expressions are passed to the loop as
+;; procedures created in the caller's environment, so the names used by the
+;; expansion (loop, test, body, ...) cannot capture the user's variables.
+
+(define (while? exp) (tagged-list? exp 'while))
+(define (while-test exp) (cadr exp))
+(define (while-body exp) (cddr exp))
+
+(define (while->combination exp)
+  (list (make-lambda '(test body)
+                     '((define (loop)
+                         (if (test)
+                             (begin (body) (loop))
+                             false))
+                       (loop)))
+        (make-lambda '() (list (while-test exp)))
+        (make-lambda '() (while-body exp))))
+
+(define (for? exp) (tagged-list? exp 'for))
+(define (for-variable exp) (car (cadr exp)))
+(define (for-from exp) (cadr (cadr exp)))
+(define (for-to exp) (caddr (cadr exp)))
+(define (for-body exp) (cddr exp))
+
+(define (for->combination exp)
+  (list (make-lambda '(from to body)
+                     '((define (loop i)
+                         (if (> i to)
+                             false
+                             (begin (body i) (loop (+ i 1)))))
+                       (loop from)))
+        (for-from exp)
+        (for-to exp)
+        (make-lambda (list (for-variable exp)) (for-body exp))))
+
+(define eval-without-loops mc-eval)
+
+(define (mc-eval exp env)
+  (cond ((while? exp) (mc-eval (while->combination exp) env))
+        ((for? exp) (mc-eval (for->combination exp) env))
+        (else (eval-without-loops exp env))))
+
+(check (interpret '(define i 0)
+                  '(define sum 0)
+                  '(while (< i 5)
+                     (set! sum (+ sum i))
+                     (set! i (+ i 1)))
+                  'sum)
+       => 10)
+(check (interpret '(while false (car '()))) => #f)
+(check (interpret '(define test 3)
+                  '(define body '())
+                  '(while (> test 0)
+                     (set! body (cons test body))
+                     (set! test (- test 1)))
+                  'body)
+       => '(1 2 3))
+
+(check (interpret '(define squares '())
+                  '(for (i 1 4) (set! squares (cons (* i i) squares)))
+                  'squares)
+       => '(16 9 4 1))
+(check (interpret '(define runs 0)
+                  '(for (i 3 1) (set! runs (+ runs 1)))
+                  'runs)
+       => 0)
+(check (interpret '(define to 2)
+                  '(define (loop) 'user-loop)
+                  '(define seen '())
+                  '(for (from 0 to) (set! seen (cons (list from (loop)) seen)))
+                  'seen)
+       => '((2 user-loop) (1 user-loop) (0 user-loop)))
+(check (interpret '(define evaluations 0)
+                  '(define (limit) (set! evaluations (+ evaluations 1)) 5)
+                  '(for (i 1 (limit)) i)
+                  'evaluations)
+       => 1)

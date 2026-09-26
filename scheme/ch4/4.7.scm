@@ -10,9 +10,8 @@
         (make-let (list (car bindings))
                   (list (nest (cdr bindings)))))))
 
-;; Adding the clause below is enough: the nested lets it produces are
-;; themselves handled by the let clause of 4.6, which turns them into
-;; combinations, so let* never has to be expanded all the way by hand.
+;; Adding this clause is enough: the nested lets are evaluated by the let
+;; clause of 4.6, so let* need not be expanded into lambdas directly.
 (define eval-without-let* mc-eval)
 
 (define (mc-eval exp env)

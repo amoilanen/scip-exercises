@@ -74,23 +74,25 @@
               (loop (stream-cdr results) (- n 1))))))
 
 (define (run-query-bounded query step-limit)
-  (let ((found '())
-        (plain-qeval qeval))
-    (call-with-current-continuation
-     (lambda (give-up)
-       (define (counting-qeval query frame-stream)
-         (set! step-limit (- step-limit 1))
-         (if (< step-limit 0)
-             (give-up 'diverged))
-         (plain-qeval query frame-stream))
-       (dynamic-wind
-        (lambda () (set! qeval counting-qeval))
-        (lambda ()
-          (stream-for-each (lambda (answer) (set! found (cons answer found)))
-                           (query-results query)))
-        (lambda () (set! qeval plain-qeval)))
-       (reverse found)))
-    (if (< step-limit 0)
+  (let* ((found '())
+         (plain-qeval qeval)
+         (outcome
+          (call-with-current-continuation
+           (lambda (give-up)
+             (define (counting-qeval query frame-stream)
+               (set! step-limit (- step-limit 1))
+               (if (< step-limit 0)
+                   (give-up 'diverged))
+               (plain-qeval query frame-stream))
+             (dynamic-wind
+              (lambda () (set! qeval counting-qeval))
+              (lambda ()
+                (stream-for-each (lambda (answer)
+                                   (set! found (cons answer found)))
+                                 (query-results query))
+                'finished)
+              (lambda () (set! qeval plain-qeval)))))))
+    (if (eq? outcome 'diverged)
         (reverse (cons 'diverged found))
         (reverse found))))
 
@@ -104,3 +106,92 @@
         ((remove-one (car xs) ys)
          => (lambda (rest) (same-elements? (cdr xs) rest)))
         (else #f)))
+
+;;; The evaluator
+
+(define (qeval query frame-stream)
+  (let ((qproc (get (type query) 'qeval)))
+    (if qproc
+        (qproc (contents query) frame-stream)
+        (simple-query query frame-stream))))
+
+(define (simple-query query-pattern frame-stream)
+  (stream-flatmap
+   (lambda (frame)
+     (stream-append-delayed (find-assertions query-pattern frame)
+                            (delay (apply-rules query-pattern frame))))
+   frame-stream))
+
+(define (conjoin conjuncts frame-stream)
+  (if (empty-conjunction? conjuncts)
+      frame-stream
+      (conjoin (rest-conjuncts conjuncts)
+               (qeval (first-conjunct conjuncts) frame-stream))))
+
+(define (disjoin disjuncts frame-stream)
+  (if (empty-disjunction? disjuncts)
+      the-empty-stream
+      (interleave-delayed
+       (qeval (first-disjunct disjuncts) frame-stream)
+       (delay (disjoin (rest-disjuncts disjuncts) frame-stream)))))
+
+(define (negate operands frame-stream)
+  (stream-flatmap
+   (lambda (frame)
+     (if (stream-null? (qeval (negated-query operands)
+                              (singleton-stream frame)))
+         (singleton-stream frame)
+         the-empty-stream))
+   frame-stream))
+
+(define (lisp-value call frame-stream)
+  (stream-flatmap
+   (lambda (frame)
+     (if (execute (instantiate call
+                               frame
+                               (lambda (var frame)
+                                 (error "Unknown pat var -- LISP-VALUE"
+                                        var))))
+         (singleton-stream frame)
+         the-empty-stream))
+   frame-stream))
+
+(define (execute exp)
+  (apply (eval (predicate exp) user-initial-environment)
+         (args exp)))
+
+(define (always-true ignore frame-stream) frame-stream)
+
+(put 'and 'qeval conjoin)
+(put 'or 'qeval disjoin)
+(put 'not 'qeval negate)
+(put 'lisp-value 'qeval lisp-value)
+(put 'always-true 'qeval always-true)
+
+;;; Assertions and pattern matching
+
+(define (find-assertions pattern frame)
+  (stream-flatmap (lambda (datum) (check-an-assertion datum pattern frame))
+                  (fetch-assertions pattern frame)))
+
+(define (check-an-assertion assertion query-pattern query-frame)
+  (let ((match-result (pattern-match query-pattern assertion query-frame)))
+    (if (eq? match-result 'failed)
+        the-empty-stream
+        (singleton-stream match-result))))
+
+(define (pattern-match pattern datum frame)
+  (cond ((eq? frame 'failed) 'failed)
+        ((equal? pattern datum) frame)
+        ((var? pattern) (extend-if-consistent pattern datum frame))
+        ((and (pair? pattern) (pair? datum))
+         (pattern-match (cdr pattern)
+                        (cdr datum)
+                        (pattern-match (car pattern) (car datum) frame)))
+        (else 'failed)))
+
+(define (extend-if-consistent var datum frame)
+  (let ((binding (binding-in-frame var frame)))
+    (if binding
+        (pattern-match (binding-value binding) datum frame)
+        (extend var datum frame))))

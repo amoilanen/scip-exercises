@@ -30,11 +30,11 @@
     (record-snapshot! (cdr stack-mirror))
     value))
 
-(define (stack-history make-machine-for n)
+(define (stack-history machine-maker n)
   (set! label-names '())
   (set! stack-mirror '())
   (set! snapshots '())
-  (let ((result (run-machine (make-machine-for) (list (list 'n n)) 'val)))
+  (let ((result (run-machine (machine-maker) (list (list 'n n)) 'val)))
     (cons result (reverse snapshots))))
 
 ;; Factorial of 3. Each recursive call saves the caller's continue and n;
