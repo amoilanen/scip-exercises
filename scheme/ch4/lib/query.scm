@@ -12,8 +12,10 @@
 ;;                                   called STEPS times, followed by the
 ;;                                   symbol diverged if the limit was hit
 ;;
-;; microshaft-data-base (4.4.1) and genesis-data-base (exercise 4.63) are
-;; ready to be installed.  same-elements? compares answer lists as multisets.
+;; Ready to be installed: microshaft-data-base, the assertions and rules of
+;; section 4.4.1 (also available separately as microshaft-assertions and
+;; microshaft-rules), append-to-form-rules and genesis-data-base (exercise
+;; 4.63).  same-elements? compares answer lists as multisets.
 
 ;;; Streams
 
@@ -241,8 +243,8 @@
           ((depends-on? val var frame) 'failed)
           (else (extend var val frame)))))
 
-;; True if EXP refers to VAR, directly or through the bindings in FRAME.
-;; Binding VAR to such an expression would make it a fixed point.
+;; True if EXP refers to VAR, directly or through the bindings in FRAME:
+;; binding VAR to EXP would make VAR part of its own value.
 (define (depends-on? exp var frame)
   (let walk ((e exp))
     (cond ((var? e)

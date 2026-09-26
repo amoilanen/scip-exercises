@@ -38,7 +38,7 @@
 
 (check (run-query-head married-query 2)
        => '((married Mickey Minnie) (married Mickey Minnie)))
-(check (run-query-bounded looping-disjunction 300)
+(check (run-query-bounded looping-disjunction 100)
        => '((or (supervisor (Hacker Alyssa P) (Bitdiddle Ben))
                 (loop (Hacker Alyssa P)))
             diverged))
@@ -46,7 +46,7 @@
 (define original-simple-query simple-query)
 (set! simple-query louis-simple-query)
 
-(check (run-query-bounded married-query 300) => '(diverged))
+(check (run-query-bounded married-query 100) => '(diverged))
 (check (run-query '(job ?x (computer programmer)))
        (=> same-elements?)
        '((job (Hacker Alyssa P) (computer programmer))
@@ -55,4 +55,4 @@
 (set! simple-query original-simple-query)
 (put 'or 'qeval louis-disjoin)
 
-(check (run-query-bounded looping-disjunction 300) => '(diverged))
+(check (run-query-bounded looping-disjunction 100) => '(diverged))

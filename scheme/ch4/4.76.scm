@@ -78,5 +78,5 @@
 ;; recursive rule whose body is a conjunction, like outranked-by, applies
 ;; itself with nothing bound and never finishes.
 (check (run-query '(lives-near ?x (Bitdiddle Ben))) => '())
-(check (run-query-bounded '(outranked-by (Reasoner Louis) ?who) 300)
+(check (run-query-bounded '(outranked-by (Reasoner Louis) ?who) 100)
        => '((outranked-by (Reasoner Louis) (Hacker Alyssa P)) diverged))

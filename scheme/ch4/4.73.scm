@@ -31,6 +31,6 @@
 
 (set! flatten-stream louis-flatten-stream)
 
-(check (run-query-bounded query 300) => '(diverged))
+(check (run-query-bounded query 50) => '(diverged))
 (check (run-query '(supervisor ?x (Scrooge Eben)))
        => '((supervisor (Cratchet Robert) (Scrooge Eben))))

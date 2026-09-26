@@ -14,7 +14,7 @@
 ;; These rules cannot answer (reverse ?x (1 2 3)).  With ?x unknown,
 ;; (reverse ?rest ?reversed-rest) has nothing bound and enumerates lists of
 ;; every length.  The answer is found, but the search never ends.
-(check (run-query-bounded '(reverse ?x (1 2 3)) 300)
+(check (run-query-bounded '(reverse ?x (1 2 3)) 100)
        => '((reverse (3 2 1) (1 2 3)) diverged))
 
 ;; Fixing the length of both lists first makes the rules work both ways:

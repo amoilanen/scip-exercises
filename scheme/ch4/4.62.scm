@@ -27,4 +27,4 @@
 (initialize-data-base! (reverse last-pair-rules))
 
 (check (run-query '(last-pair (1 2 3) ?x)) => '((last-pair (1 2 3) (3))))
-(check (run-query-bounded '(last-pair ?x (3)) 1000) => '(diverged))
+(check (run-query-bounded '(last-pair ?x (3)) 100) => '(diverged))

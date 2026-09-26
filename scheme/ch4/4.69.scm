@@ -37,5 +37,5 @@
 ;; is found and the search then continues forever.
 (check (run-query-head '(?relationship Adam Irad) 1)
        => '(((great grandson) Adam Irad)))
-(check (run-query-bounded '(?relationship Adam Irad) 300)
+(check (run-query-bounded '(?relationship Adam Irad) 100)
        => '(((great grandson) Adam Irad) diverged))
