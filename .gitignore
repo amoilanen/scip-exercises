@@ -1,0 +1,11 @@
+# MIT Scheme compiler output
+*.bin
+*.bci
+*.com
+*.ext
+
+# C builds (exercises 5.51, 5.52)
+*.o
+build/
+
+*.log

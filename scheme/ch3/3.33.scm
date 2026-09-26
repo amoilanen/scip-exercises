@@ -1,0 +1,31 @@
+(load "lib/check.scm")
+(load "ch3/lib/constraints.scm")
+
+(define (averager a b c)
+  (let ((sum (make-connector))
+        (two (make-connector)))
+    (adder a b sum)
+    (multiplier c two sum)
+    (constant 2 two)
+    'ok))
+
+(define a (make-connector))
+(define b (make-connector))
+(define c (make-connector))
+(averager a b c)
+
+(set-value! a 10 'user)
+(check (has-value? c) => #f)
+(set-value! b 20 'user)
+(check (get-value c) => 15)
+
+(forget-value! b 'user)
+(check (has-value? c) => #f)
+(set-value! c 12 'user)
+(check (get-value b) => 14)
+
+(check-error (set-value! b 20 'user))
+(forget-value! a 'user)
+(check (has-value? b) => #f)
+(set-value! b 1 'user)
+(check (get-value a) => 23)

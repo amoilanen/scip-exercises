@@ -1,0 +1,30 @@
+(load "lib/check.scm")
+(load "ch4/lib/query.scm")
+
+(initialize-data-base!
+ (append microshaft-data-base
+         '((rule (can-replace ?person-1 ?person-2)
+                 (and (job ?person-1 ?job-1)
+                      (job ?person-2 ?job-2)
+                      (or (same ?job-1 ?job-2)
+                          (can-do-job ?job-1 ?job-2))
+                      (not (same ?person-1 ?person-2)))))))
+
+(check (run-query '(can-replace ?x (Fect Cy D)))
+       (=> same-elements?)
+       '((can-replace (Bitdiddle Ben) (Fect Cy D))
+         (can-replace (Hacker Alyssa P) (Fect Cy D))))
+
+(check (run-query '(and (can-replace ?replacement ?person)
+                        (salary ?replacement ?low)
+                        (salary ?person ?high)
+                        (lisp-value < ?low ?high)))
+       (=> same-elements?)
+       '((and (can-replace (Aull DeWitt) (Warbucks Oliver))
+              (salary (Aull DeWitt) 25000)
+              (salary (Warbucks Oliver) 150000)
+              (lisp-value < 25000 150000))
+         (and (can-replace (Fect Cy D) (Hacker Alyssa P))
+              (salary (Fect Cy D) 35000)
+              (salary (Hacker Alyssa P) 40000)
+              (lisp-value < 35000 40000))))
