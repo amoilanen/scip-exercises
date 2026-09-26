@@ -24,23 +24,24 @@
 (define (lexical-address-set! address value env)
   (set-car! (lexical-address-values address env) value))
 
-(define env
+(define environment
   (extend-environment '(y z)
                       '(1 2)
                       (extend-environment '(a b c d e)
                                           '(3 4 5 6 *unassigned*)
-                                          (extend-environment '(x y)
-                                                              '(7 8)
-                                                              '()))))
+                                          (extend-environment
+                                           '(x y)
+                                           '(7 8)
+                                           the-empty-environment))))
 
-(check (lexical-address-lookup (make-lexical-address 0 0) env) => 1)
-(check (lexical-address-lookup (make-lexical-address 0 1) env) => 2)
-(check (lexical-address-lookup (make-lexical-address 1 2) env) => 5)
-(check (lexical-address-lookup (make-lexical-address 2 1) env) => 8)
-(check-error (lexical-address-lookup (make-lexical-address 1 4) env))
+(check (lexical-address-lookup (make-lexical-address 0 0) environment) => 1)
+(check (lexical-address-lookup (make-lexical-address 0 1) environment) => 2)
+(check (lexical-address-lookup (make-lexical-address 1 2) environment) => 5)
+(check (lexical-address-lookup (make-lexical-address 2 1) environment) => 8)
+(check-error (lexical-address-lookup (make-lexical-address 1 4) environment))
 
-(lexical-address-set! (make-lexical-address 1 4) 9 env)
-(check (lexical-address-lookup (make-lexical-address 1 4) env) => 9)
-(lexical-address-set! (make-lexical-address 2 1) 10 env)
-(check (lexical-address-lookup (make-lexical-address 2 1) env) => 10)
-(check (lexical-address-lookup (make-lexical-address 0 0) env) => 1)
+(lexical-address-set! (make-lexical-address 1 4) 9 environment)
+(check (lexical-address-lookup (make-lexical-address 1 4) environment) => 9)
+(lexical-address-set! (make-lexical-address 2 1) 10 environment)
+(check (lexical-address-lookup (make-lexical-address 2 1) environment) => 10)
+(check (lexical-address-lookup (make-lexical-address 0 0) environment) => 1)
