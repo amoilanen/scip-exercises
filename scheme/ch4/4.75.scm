@@ -45,7 +45,8 @@
   '(and (supervisor ?person ?boss)
         (unique (supervisor ?anyone ?boss))))
 
-(check (map (lambda (answer) (caddr (cadr answer)))
-            (run-query supervisors-of-one-person))
+(define (boss answer) (caddr (cadr answer)))
+
+(check (map boss (run-query supervisors-of-one-person))
        (=> same-elements?)
        '((Hacker Alyssa P) (Scrooge Eben)))

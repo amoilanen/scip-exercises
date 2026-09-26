@@ -21,10 +21,11 @@ typedef enum {
     TYPE_LABEL,
     TYPE_UNSPECIFIED,
     TYPE_EOF,
-    /* The types below point into memory; the garbage collector moves them. */
+    /* These point into memory, where the garbage collector moves them. */
     TYPE_PAIR,
     TYPE_PROCEDURE,
     TYPE_COMPILED_PROCEDURE,
+    /* Marks a cell that the garbage collector has moved. */
     TYPE_BROKEN_HEART
 } Type;
 

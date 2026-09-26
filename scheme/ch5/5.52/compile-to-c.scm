@@ -126,7 +126,8 @@
   (define (tail->text tail)
     (cond ((null? tail) "")
           ((pair? tail)
-           (string-append " " (datum->text (car tail)) (tail->text (cdr tail))))
+           (string-append " " (datum->text (car tail))
+                          (tail->text (cdr tail))))
           (else (string-append " . " (datum->text tail)))))
   (cond ((null? datum) "()")
         ((eq? datum #t) "#t")
@@ -139,6 +140,7 @@
                         ")"))
         (else (error "Unsupported constant -- COMPILE-TO-C" datum))))
 
+;; constants maps each table constant to its index.
 (define (constant->c value constants)
   (cond ((null? value) "EMPTY_LIST")
         ((eq? value #t) "TRUE_VALUE")
@@ -149,9 +151,7 @@
          (string-append "make_flonum(" (number->string value) ")"))
         ((table-constant? value)
          (string-append "constants["
-                        (number->string (list-index (lambda (constant)
-                                                      (equal? constant value))
-                                                    constants))
+                        (number->string (hash-table-ref constants value))
                         "]"))
         (else (error "Unsupported constant -- COMPILE-TO-C" value))))
 
@@ -215,27 +215,32 @@
 ;; Returns the lines of C code for the instructions. Labels that nothing
 ;; jumps to are left out, since C warns about unused labels.
 (define (code->c instructions constants used-labels)
-  (define (statement text) (string-append "    " text))
+  (define (statements->c statements)
+    (map (lambda (statement) (string-append "    " statement)) statements))
+  (define (label->c label)
+    (if (hash-table-contains? used-labels label)
+        (list (string-append (c-identifier label) ":"))
+        '()))
   (let loop ((instructions instructions) (lines '()))
-    (cond ((null? instructions) (reverse lines))
-          ((symbol? (car instructions))
-           (loop (cdr instructions)
-                 (if (memq (car instructions) used-labels)
-                     (cons (string-append (c-identifier (car instructions)) ":")
-                           lines)
-                     lines)))
-          ((tagged-list? (car instructions) 'test)
-           (loop (cddr instructions)
-                 (cons (statement (test-and-branch->c (car instructions)
-                                                      (cadr instructions)
-                                                      constants))
-                       lines)))
-          (else
-           (loop (cdr instructions)
-                 (append (reverse (map statement
-                                       (instruction->c (car instructions)
-                                                       constants)))
-                         lines))))))
+    (if (null? instructions)
+        (reverse lines)
+        (let ((instruction (car instructions)))
+          (cond ((symbol? instruction)
+                 (loop (cdr instructions)
+                       (append (label->c instruction) lines)))
+                ((tagged-list? instruction 'test)
+                 (loop (cddr instructions)
+                       (append (statements->c
+                                (list (test-and-branch->c instruction
+                                                          (cadr instructions)
+                                                          constants)))
+                               lines)))
+                (else
+                 (loop (cdr instructions)
+                       (append (reverse
+                                (statements->c
+                                 (instruction->c instruction constants)))
+                               lines))))))))
 
 ;;; Programs
 
@@ -246,8 +251,26 @@
            (filter (lambda (part) (tagged-list? part kind))
                    (cdr instruction)))))
 
+(define (remove-duplicates items)
+  (let ((seen (make-equal-hash-table)))
+    (let loop ((items items) (unique '()))
+      (cond ((null? items) (reverse unique))
+            ((hash-table-contains? seen (car items))
+             (loop (cdr items) unique))
+            (else
+             (hash-table-set! seen (car items) #t)
+             (loop (cdr items) (cons (car items) unique)))))))
+
+;; Returns a table that maps each item to its position in the list.
+(define (index-table items)
+  (let ((table (make-equal-hash-table)))
+    (for-each (lambda (item index) (hash-table-set! table item index))
+              items
+              (iota (length items)))
+    table))
+
 (define (collect kind instructions)
-  (delete-duplicates
+  (remove-duplicates
    (append-map (lambda (instruction) (operands-of-kind kind instruction))
                instructions)))
 
@@ -300,8 +323,9 @@
         (line "    load_constants(constants, constant_texts, "
               (number->string (length constants)) ");"))
     (if (or dispatch? (pair? constants)) (line))
-    (for-each line (code->c instructions constants
-                            (collect 'label instructions)))
+    (for-each line (code->c instructions
+                            (index-table constants)
+                            (index-table (collect 'label instructions))))
     (line "    return;")
     (if dispatch?
         (begin

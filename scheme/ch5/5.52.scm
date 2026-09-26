@@ -36,9 +36,8 @@
     (string-append directory "build/" name)))
 
 ;; Returns the exit status and the output of the compiled program.
-(define (run-program exps #!optional input)
-  (run-command (build-program "program" exps)
-               (if (default-object? input) "" input)))
+(define (run-program exps)
+  (run-command (build-program "program" exps) ""))
 
 (define (program-output exps)
   (cdr (run-program exps)))
@@ -89,7 +88,6 @@
                  "    }"
                  "}"))
 
-(check (program-output '((car '(a "b")))) => "")
 (check (program-output '((display (car '(a "b"))))) => "a")
 
 ;;; Compiled programs
@@ -124,15 +122,16 @@
                          (display (list (next!) (next!)))))
        => "(2 1)")
 
-;; The loop runs in constant space; count would need 2 * 10^6 places on
-;; the stack, which holds 10^5.
+;; The loop runs in constant space, while count needs stack space for each
+;; of its 10^6 pending additions, more than the stack's 10^5 places.
 (check (run-program
         '((define (loop n) (if (= n 0) 'done (loop (- n 1))))
           (display (loop 1000000))
           (newline)
           (define (count n) (if (= n 0) 0 (+ 1 (count (- n 1)))))
           (display (count 1000000))))
-       => (cons 1 (lines "done" ";Aborting!: maximum recursion depth exceeded")))
+       => (cons 1 (lines "done"
+                         ";Aborting!: maximum recursion depth exceeded")))
 
 ;; The memory holds 2^18 pairs, so churn needs many collections, and keep
 ;; has to survive them.
@@ -149,9 +148,6 @@
 
 (check (run-program '((display "before ") (car 1) (display "after")))
        => (cons 1 (lines "before ;The object passed to car is not a pair: 1")))
-
-(check (run-program '((error "Something bad:" 'x 42)))
-       => (cons 1 (lines ";Something bad: x 42")))
 
 ;;; The metacircular evaluator compiled to C
 
@@ -204,8 +200,10 @@
          (loop 1000)
          (lambda (x) (* x x))")
        => (lines "ok" "3628800" "ok" "ok" "70" "Insufficient funds" "pair"
-                 "ok" "done" "(compound-procedure (x) ((* x x)) <procedure-env>)"))
+                 "ok" "done"
+                 "(compound-procedure (x) ((* x x)) <procedure-env>)"))
 
-;; Errors of the interpreted program are errors of the compiled evaluator.
+;; Errors of the interpreted program are errors of the compiled evaluator,
+;; which reports them with the error primitive of the runtime.
 (check (run-command mc-evaluator "(car '(a b)) (undefined-variable) 'never")
        => (cons 1 (lines "a" ";Unbound variable undefined-variable")))

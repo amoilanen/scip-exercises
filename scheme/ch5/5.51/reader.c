@@ -179,7 +179,7 @@ static Value read_hash_syntax(Source *in)
         return TRUE_VALUE;
     if (strcmp(token, "#f") == 0 || strcmp(token, "#false") == 0)
         return FALSE_VALUE;
-    scheme_error("Unknown syntax", make_string(token));
+    scheme_error("Unknown syntax", intern(token));
     return UNSPECIFIED;
 }
 
