@@ -4,7 +4,7 @@
 
 CC = gcc
 CORE = ../5.51
-CFLAGS = -std=c99 -Wall -Wextra -pedantic -O2 -MMD -MP -I. -I$(CORE)
+CFLAGS = -std=c99 -Wall -Wextra -pedantic -MMD -MP -I. -I$(CORE)
 BUILD = build
 
 RUNTIME = $(addprefix $(BUILD)/, object.o memory.o error.o reader.o \
@@ -14,11 +14,13 @@ vpath %.c $(CORE)
 
 runtime: $(RUNTIME)
 
+# A compiled program is one large function, which gcc is slow to optimize,
+# and it spends most of its time in the runtime anyway.
 $(BUILD)/%: $(BUILD)/%.c $(RUNTIME)
-	$(CC) $(CFLAGS) -o $@ $< $(RUNTIME)
+	$(CC) $(CFLAGS) -O0 -o $@ $< $(RUNTIME)
 
 $(BUILD)/%.o: %.c | $(BUILD)
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -O2 -c -o $@ $<
 
 $(BUILD):
 	mkdir -p $@

@@ -187,3 +187,25 @@
 
 (define (mc-eval-output program)
   (cdr (run-command mc-evaluator program)))
+
+(check (mc-eval-output
+        "(define (factorial n) (if (= n 0) 1 (* n (factorial (- n 1)))))
+         (factorial 10)
+         (define (make-account balance)
+           (lambda (amount)
+             (if (> amount balance)
+                 \"Insufficient funds\"
+                 (begin (set! balance (- balance amount)) balance))))
+         (define withdraw (make-account 100))
+         (withdraw 30)
+         (withdraw 80)
+         (cond ((null? '(1)) 'empty) ((pair? '(1)) 'pair) (else 'other))
+         (define (loop n) (if (= n 0) 'done (loop (- n 1))))
+         (loop 1000)
+         (lambda (x) (* x x))")
+       => (lines "ok" "3628800" "ok" "ok" "70" "Insufficient funds" "pair"
+                 "ok" "done" "(compound-procedure (x) ((* x x)) <procedure-env>)"))
+
+;; Errors of the interpreted program are errors of the compiled evaluator.
+(check (run-command mc-evaluator "(car '(a b)) (undefined-variable) 'never")
+       => (cons 1 (lines "a" ";Unbound variable undefined-variable")))

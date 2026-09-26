@@ -30,13 +30,10 @@
 (define disjunction '(or (married Mickey ?x) (supervisor ?x (Bitdiddle Ben))))
 (define conjunction '(and (person ?p) (married ?p ?q)))
 
-(define (second-clause answer) (caddr answer))
+(define (value-of-x answer) (caddr (cadr answer)))
 
-(check (map second-clause (run-query-head disjunction 4))
-       => '((supervisor Minnie (Bitdiddle Ben))
-            (supervisor (Hacker Alyssa P) (Bitdiddle Ben))
-            (supervisor Minnie (Bitdiddle Ben))
-            (supervisor (Fect Cy D) (Bitdiddle Ben))))
+(check (map value-of-x (run-query-head disjunction 4))
+       => '(Minnie (Hacker Alyssa P) Minnie (Fect Cy D)))
 
 (check (run-query-head conjunction 2)
        => '((and (person Mickey) (married Mickey Minnie))
@@ -45,11 +42,8 @@
 (put 'or 'qeval appending-disjoin)
 (set! flatten-stream appending-flatten-stream)
 
-(check (map second-clause (run-query-head disjunction 4))
-       => '((supervisor Minnie (Bitdiddle Ben))
-            (supervisor Minnie (Bitdiddle Ben))
-            (supervisor Minnie (Bitdiddle Ben))
-            (supervisor Minnie (Bitdiddle Ben))))
+(check (map value-of-x (run-query-head disjunction 4))
+       => '(Minnie Minnie Minnie Minnie))
 
 (check (run-query-head conjunction 2)
        => '((and (person Mickey) (married Mickey Minnie))
