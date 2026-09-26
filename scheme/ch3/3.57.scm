@@ -9,9 +9,9 @@
 
 (define (make-fibs)
   (define fibs
-    (cons-stream 0
-                 (cons-stream 1
-                              (stream-map counted-add (stream-cdr fibs) fibs))))
+    (cons-stream
+     0
+     (cons-stream 1 (stream-map counted-add (stream-cdr fibs) fibs))))
   fibs)
 
 (define (additions-for-fib n)

@@ -13,12 +13,12 @@
 ;; (louis-pairs integers integers) never returns.
 
 ;; The integers from n, signalling an error once forced past limit.
-(define (integers-up-to-tripwire n limit)
+(define (tripwire-integers n limit)
   (if (> n limit)
       (error "Stream forced too far:" n)
-      (cons-stream n (integers-up-to-tripwire (+ n 1) limit))))
+      (cons-stream n (tripwire-integers (+ n 1) limit))))
 
-(define (guarded-integers) (integers-up-to-tripwire 1 50))
+(define (guarded-integers) (tripwire-integers 1 50))
 
 (check (stream-head (pairs (guarded-integers) (guarded-integers)) 5)
        => '((1 1) (1 2) (2 2) (1 3) (2 3)))

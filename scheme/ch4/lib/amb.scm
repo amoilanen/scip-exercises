@@ -92,6 +92,15 @@
   (cons (make-lambda (map car (let-bindings exp)) (let-body exp))
         (map cadr (let-bindings exp))))
 
+(define (analyze-let* exp)
+  (analyze (let*->nested-lets exp)))
+
+(define (let*->nested-lets exp)
+  (let nest ((bindings (let-bindings exp)))
+    (if (or (null? bindings) (null? (cdr bindings)))
+        (cons 'let (cons bindings (let-body exp)))
+        (list 'let (list (car bindings)) (nest (cdr bindings))))))
+
 ;; and/or short-circuit: an operand is evaluated only if it is needed.
 (define (analyze-and exp)
   (let loop ((procs (map analyze (cdr exp))))
@@ -219,6 +228,7 @@
 (install-special-form! 'begin analyze-begin)
 (install-special-form! 'cond analyze-cond)
 (install-special-form! 'let analyze-let)
+(install-special-form! 'let* analyze-let*)
 (install-special-form! 'and analyze-and)
 (install-special-form! 'or analyze-or)
 (install-special-form! 'amb analyze-amb)

@@ -53,35 +53,43 @@
     3
     4))
 
-(define (variable-accesses code)
+(define (variable-lookups code)
   (filter-map
    (lambda (inst)
-     (and (pair? inst)
-          (let ((operation (find operation-exp? (list (cddr inst) (cdr inst)))))
-            (and operation
-                 (memq (operation-exp-op operation)
-                       '(lexical-address-lookup lexical-address-set!
-                         lookup-variable-value set-variable-value!))
-                 (constant-exp-value (car (operation-exp-operands operation)))))))
+     (and (tagged-list? inst 'assign)
+          (operation-exp? (cddr inst))
+          (memq (operation-exp-op (cddr inst))
+                '(lexical-address-lookup lookup-variable-value))
+          (constant-exp-value (car (operation-exp-operands (cddr inst))))))
    code))
 
-;; Operands are compiled right to left.
-(check (variable-accesses (statements (compile nested-lambdas 'val 'next)))
-       => '((0 0) (0 1) (2 0) * (0 3) (0 2) + (2 0) (0 1) (0 0) *))
+;; Operands are compiled right to left; the body of the innermost lambda
+;; comes first because it is tacked on right after its make-compiled-procedure.
+(check (variable-lookups (statements (compile nested-lambdas 'val 'next)))
+       => '(* (0 1) (0 0) (2 0)
+            + (1 0) (0 3) (0 2)
+            * (1 0) (0 1) (0 0)))
 
 (check (compile-and-run (list nested-lambdas 1 2 3 4 5)) => 180)
 
+(check (let ((code (statements (compile '(lambda (n) (set! n 1)) 'val 'next))))
+         (and (member '(perform (op lexical-address-set!)
+                                (const (0 0))
+                                (reg val)
+                                (reg env))
+                      code)
+              #t))
+       => #t)
+
 (check (compile-and-run
-        '(define (make-counter)
-           (let-counter 0))
-        '(define (let-counter count)
+        '(define (make-counter count)
            (lambda ()
              (set! count (+ count 1))
              count))
-        '(define counter (make-counter))
+        '(define counter (make-counter 10))
         '(counter)
         '(counter))
-       => 2)
+       => 12)
 
 (check (compile-and-run
         '(define total 0)

@@ -2,7 +2,10 @@
 ;;
 ;;   (initialize-data-base! items)   empties the data base and adds ITEMS,
 ;;                                   assertions and (rule ...) forms alike
-;;   (add-to-data-base! items)       adds ITEMS to the current data base
+;;   (add-to-data-base! items)       adds ITEMS to the current data base,
+;;                                   ahead of the older items; within ITEMS
+;;                                   the order is kept, so rules are tried
+;;                                   in the order they are listed
 ;;   (run-query query)               list of the instantiated answers
 ;;   (run-query-head query n)        at most the first N answers
 ;;   (run-query-bounded query steps) the answers found before qeval has been
@@ -68,10 +71,10 @@
 
 (define (run-query-head query n)
   (let loop ((results (query-results query)) (n n))
-    (if (or (= n 0) (stream-null? results))
-        '()
-        (cons (stream-car results)
-              (loop (stream-cdr results) (- n 1))))))
+    (cond ((or (= n 0) (stream-null? results)) '())
+          ((= n 1) (list (stream-car results)))
+          (else (cons (stream-car results)
+                      (loop (stream-cdr results) (- n 1)))))))
 
 (define (run-query-bounded query step-limit)
   (let* ((found '())
@@ -315,7 +318,7 @@
 (define (add-to-data-base! items)
   (for-each (lambda (item)
               (add-rule-or-assertion! (query-syntax-process item)))
-            items))
+            (reverse items)))
 
 (define (initialize-data-base! items)
   (reset-data-base!)

@@ -1,33 +1,34 @@
 (load "lib/check.scm")
 (load "ch3/lib/serializers.scm")
 
-;; The squaring reads x twice under the serializer, so it can no longer see
-;; x change halfway (11 and 110 are gone), but its write is outside the
-;; serializer: 100 remains, when the increment runs between the squaring's
-;; read and write.  101 and 121 are the two sequential orders.
+;; Only 110 disappears: the squaring reads x twice under the serializer,
+;; so the increment can no longer change x between the two reads.  The
+;; squaring's write is not serialized, so it can still fall between the
+;; increment's read and write (11), or the whole increment between the
+;; squaring's reads and its write (100).  101 and 121 are the sequential
+;; orders.
 
-
-(define x)
+;; The squaring's two reads of x are separate steps, as in (* x x).
 
 (define (unserialized-world)
-  (set! x 10)
-  (parallel-execute
-   (lambda ()
-     (let* ((a (atomic x))
-            (b (atomic x)))
-       (atomic (set! x (* a b)))))
-   (lambda ()
-     (let ((a (atomic x)))
-       (atomic (set! x (+ a 1))))))
-  x)
+  (let ((x 10))
+    (parallel-execute
+     (lambda ()
+       (let* ((a (atomic x))
+              (b (atomic x)))
+         (atomic (set! x (* a b)))))
+     (lambda ()
+       (let ((a (atomic x)))
+         (atomic (set! x (+ a 1))))))
+    x))
 
 (check (possible-outcomes unserialized-world)
        (=> same-set?)
        '(11 100 101 110 121))
 
 (define (serialized-world)
-  (set! x 10)
-  (let ((s (make-serializer)))
+  (let ((x 10)
+        (s (make-serializer)))
     (parallel-execute
      (lambda ()
        (let ((squared ((s (lambda ()
@@ -40,4 +41,4 @@
             (atomic (set! x (+ a 1)))))))
     x))
 
-(check (possible-outcomes serialized-world) (=> same-set?) '(100 101 121))
+(check (possible-outcomes serialized-world) (=> same-set?) '(11 100 101 121))

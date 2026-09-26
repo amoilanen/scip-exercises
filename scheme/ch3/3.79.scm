@@ -1,0 +1,15 @@
+(load "lib/check.scm")
+(load "ch3/3.77.scm")
+
+;; y'' = f(y', y)
+(define (solve-2nd f dt y0 dy0)
+  (define y (integral (delay dy) y0 dt))
+  (define dy (integral (delay ddy) dy0 dt))
+  (define ddy (stream-map f dy y))
+  y)
+
+(check (stream-ref (solve-2nd (lambda (dy y) (- y)) 0.0001 1 0) 10000)
+       (=> (approx= 1e-4))
+       (cos 1))
+(check (stream-head (solve-2nd (lambda (dy y) (+ dy y)) 1 0 1) 5)
+       => '(0 1 3 8 21))

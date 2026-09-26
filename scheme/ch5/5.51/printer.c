@@ -1,5 +1,6 @@
 #include "printer.h"
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -21,26 +22,53 @@ static void print_string(FILE *out, const char *text)
     fputc('"', out);
 }
 
-/* Prints the shortest representation that reads back as the same number,
- * the way MIT Scheme does: 3. for 3.0 and .5 for 0.5. */
+/* Prints the shortest digits that read back as the same number, in the
+ * style of MIT Scheme: 3. for 3.0, .5 for 0.5 and 1e21 for 1e+21. */
 static void print_flonum(FILE *out, double x)
 {
+    if (isnan(x) || isinf(x)) {
+        fputs(isnan(x) ? "+nan.0" : x > 0 ? "+inf.0" : "-inf.0", out);
+        return;
+    }
     char text[32];
-    for (int precision = 1; precision <= 17; precision++) {
-        snprintf(text, sizeof text, "%.*g", precision, x);
+    for (int precision = 0; precision < 17; precision++) {
+        snprintf(text, sizeof text, "%.*e", precision, x);
         if (strtod(text, NULL) == x)
             break;
     }
-    const char *digits = text;
-    if (text[0] == '-') {
+
+    /* text is [-]d.ddde[+-]xx; collect the significant digits. */
+    char digits[32];
+    int count = 0;
+    const char *p = text;
+    if (*p == '-') {
         fputc('-', out);
-        digits++;
+        p++;
     }
-    if (digits[0] == '0' && digits[1] == '.')
-        digits++;
-    fputs(digits, out);
-    if (strpbrk(digits, ".en") == NULL)
+    for (; *p != 'e'; p++) {
+        if (*p != '.')
+            digits[count++] = *p;
+    }
+    int exponent = atoi(p + 1);
+    while (count > 1 && digits[count - 1] == '0')
+        count--;
+    digits[count] = '\0';
+
+    if (exponent >= 21 || exponent < -6) {
+        fprintf(out, "%c%s%se%d", digits[0], count > 1 ? "." : "",
+                digits + 1, exponent);
+    } else if (exponent < 0) {
         fputc('.', out);
+        for (int i = -1; i > exponent; i--)
+            fputc('0', out);
+        fputs(digits, out);
+    } else {
+        for (int i = 0; i <= exponent; i++)
+            fputc(i < count ? digits[i] : '0', out);
+        fputc('.', out);
+        if (exponent + 1 < count)
+            fputs(digits + exponent + 1, out);
+    }
 }
 
 static void print_list(FILE *out, Value list, bool write)

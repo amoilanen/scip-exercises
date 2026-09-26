@@ -32,4 +32,4 @@
 (let ((original (triples-and-work env 15))
       (ben (triples-and-work ben-env 15)))
   (check (car ben) => (car original))
-  (check (< (* 3 (cdr ben)) (cdr original)) => #t))
+  (check (< (* 4 (cdr ben)) (cdr original)) => #t))

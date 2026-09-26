@@ -57,7 +57,8 @@
                                      sum-weight))
        => '((1 1) (1 2) (2 2) (0 4)))
 
-(check (stream-head ordered-by-sum 6) => '((1 1) (1 2) (1 3) (2 2) (1 4) (2 3)))
+(check (stream-head ordered-by-sum 6)
+       => '((1 1) (1 2) (1 3) (2 2) (1 4) (2 3)))
 (check (ordered-by? sum-weight (stream-head ordered-by-sum 300)) => #t)
 (check (every (lambda (pair) (<= (car pair) (cadr pair)))
               (stream-head ordered-by-sum 300))
