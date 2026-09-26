@@ -1,0 +1,295 @@
+;; The nondeterministic evaluator of section 4.3.3: an analyzing evaluator
+;; whose execution procedures take success and failure continuations.
+;; Syntax and environment procedures come from the metacircular evaluator.
+;;
+;; Special forms are dispatched through a table, so an exercise adds one with
+;; (install-special-form! tag analyzer) instead of rewriting analyze.
+
+(load "ch4/lib/mceval.scm")
+
+(define (ambeval exp env succeed fail)
+  ((analyze exp) env succeed fail))
+
+(define special-forms (make-strong-eqv-hash-table))
+
+(define (install-special-form! tag analyzer)
+  (hash-table-set! special-forms tag analyzer))
+
+(define (special-form-analyzer exp)
+  (and (pair? exp)
+       (hash-table-ref/default special-forms (car exp) #f)))
+
+(define (analyze exp)
+  (cond ((self-evaluating? exp) (analyze-self-evaluating exp))
+        ((variable? exp) (analyze-variable exp))
+        ((special-form-analyzer exp)
+         => (lambda (analyze-form) (analyze-form exp)))
+        ((application? exp) (analyze-application exp))
+        (else (error "Unknown expression type -- ANALYZE" exp))))
+
+;;; Simple expressions
+
+(define (analyze-self-evaluating exp)
+  (lambda (env succeed fail)
+    (succeed exp fail)))
+
+(define (analyze-quoted exp)
+  (let ((text (text-of-quotation exp)))
+    (lambda (env succeed fail)
+      (succeed text fail))))
+
+(define (analyze-variable exp)
+  (lambda (env succeed fail)
+    (succeed (lookup-variable-value exp env) fail)))
+
+(define (analyze-lambda exp)
+  (let ((parameters (lambda-parameters exp))
+        (body (analyze-sequence (lambda-body exp))))
+    (lambda (env succeed fail)
+      (succeed (make-procedure parameters body env) fail))))
+
+;;; Conditionals and sequences
+
+(define (analyze-if exp)
+  (let ((predicate (analyze (if-predicate exp)))
+        (consequent (analyze (if-consequent exp)))
+        (alternative (analyze (if-alternative exp))))
+    (lambda (env succeed fail)
+      (predicate env
+                 (lambda (value fail2)
+                   (if (true? value)
+                       (consequent env succeed fail2)
+                       (alternative env succeed fail2)))
+                 fail))))
+
+(define (analyze-sequence exps)
+  (define (sequentially first rest)
+    (lambda (env succeed fail)
+      (first env
+             (lambda (ignored fail2)
+               (rest env succeed fail2))
+             fail)))
+  (if (null? exps)
+      (error "Empty sequence -- ANALYZE"))
+  (let loop ((procs (map analyze exps)))
+    (if (null? (cdr procs))
+        (car procs)
+        (sequentially (car procs) (loop (cdr procs))))))
+
+(define (analyze-begin exp)
+  (analyze-sequence (begin-actions exp)))
+
+(define (analyze-cond exp)
+  (analyze (cond->if exp)))
+
+(define (analyze-let exp)
+  (analyze (let->combination exp)))
+
+(define (let-bindings exp) (cadr exp))
+(define (let-body exp) (cddr exp))
+
+(define (let->combination exp)
+  (cons (make-lambda (map car (let-bindings exp)) (let-body exp))
+        (map cadr (let-bindings exp))))
+
+;; and/or short-circuit: an operand is evaluated only if it is needed.
+(define (analyze-and exp)
+  (let loop ((procs (map analyze (cdr exp))))
+    (cond ((null? procs)
+           (lambda (env succeed fail) (succeed true fail)))
+          ((null? (cdr procs)) (car procs))
+          (else
+           (let ((first (car procs))
+                 (rest (loop (cdr procs))))
+             (lambda (env succeed fail)
+               (first env
+                      (lambda (value fail2)
+                        (if (true? value)
+                            (rest env succeed fail2)
+                            (succeed value fail2)))
+                      fail)))))))
+
+(define (analyze-or exp)
+  (let loop ((procs (map analyze (cdr exp))))
+    (if (null? procs)
+        (lambda (env succeed fail) (succeed false fail))
+        (let ((first (car procs))
+              (rest (loop (cdr procs))))
+          (lambda (env succeed fail)
+            (first env
+                   (lambda (value fail2)
+                     (if (true? value)
+                         (succeed value fail2)
+                         (rest env succeed fail2)))
+                   fail))))))
+
+;;; Definitions and assignments
+
+(define (analyze-definition exp)
+  (let ((var (definition-variable exp))
+        (value-proc (analyze (definition-value exp))))
+    (lambda (env succeed fail)
+      (value-proc env
+                  (lambda (value fail2)
+                    (define-variable! var value env)
+                    (succeed 'ok fail2))
+                  fail))))
+
+;; On backtracking the old value is restored before the failure propagates.
+(define (analyze-assignment exp)
+  (let ((var (assignment-variable exp))
+        (value-proc (analyze (assignment-value exp))))
+    (lambda (env succeed fail)
+      (value-proc env
+                  (lambda (value fail2)
+                    (let ((old-value (lookup-variable-value var env)))
+                      (set-variable-value! var value env)
+                      (succeed 'ok
+                               (lambda ()
+                                 (set-variable-value! var old-value env)
+                                 (fail2)))))
+                  fail))))
+
+;;; Applications
+
+(define (analyze-application exp)
+  (let ((operator-proc (analyze (operator exp)))
+        (operand-procs (map analyze (operands exp))))
+    (lambda (env succeed fail)
+      (operator-proc env
+                     (lambda (proc fail2)
+                       (get-args operand-procs
+                                 env
+                                 (lambda (args fail3)
+                                   (execute-application
+                                    proc args succeed fail3))
+                                 fail2))
+                     fail))))
+
+;; Operands are evaluated from left to right.
+(define (get-args operand-procs env succeed fail)
+  (if (null? operand-procs)
+      (succeed '() fail)
+      ((car operand-procs)
+       env
+       (lambda (arg fail2)
+         (get-args (cdr operand-procs)
+                   env
+                   (lambda (args fail3)
+                     (succeed (cons arg args) fail3))
+                   fail2))
+       fail)))
+
+(define application-count 0)
+
+(define (execute-application proc args succeed fail)
+  (set! application-count (+ application-count 1))
+  (cond ((primitive-procedure? proc)
+         (succeed (apply-primitive-procedure proc args) fail))
+        ((compound-procedure? proc)
+         ((procedure-body proc)
+          (extend-environment (procedure-parameters proc)
+                              args
+                              (procedure-environment proc))
+          succeed
+          fail))
+        (else
+         (error "Unknown procedure type -- EXECUTE-APPLICATION" proc))))
+
+;;; amb
+
+(define (amb-choices exp) (cdr exp))
+
+(define (analyze-amb exp)
+  (let ((choice-procs (map analyze (amb-choices exp))))
+    (lambda (env succeed fail)
+      (let try-next ((choices choice-procs))
+        (if (null? choices)
+            (fail)
+            ((car choices)
+             env
+             succeed
+             (lambda () (try-next (cdr choices)))))))))
+
+(install-special-form! 'quote analyze-quoted)
+(install-special-form! 'set! analyze-assignment)
+(install-special-form! 'define analyze-definition)
+(install-special-form! 'if analyze-if)
+(install-special-form! 'lambda analyze-lambda)
+(install-special-form! 'begin analyze-begin)
+(install-special-form! 'cond analyze-cond)
+(install-special-form! 'let analyze-let)
+(install-special-form! 'and analyze-and)
+(install-special-form! 'or analyze-or)
+(install-special-form! 'amb analyze-amb)
+
+;;; The global environment
+
+(define primitive-procedures
+  (append primitive-procedures
+          (list (list 'caddr caddr)
+                (list 'cdddr cdddr)
+                (list 'append append)
+                (list 'length length)
+                (list 'reverse reverse)
+                (list 'memq memq)
+                (list 'member member)
+                (list 'even? even?)
+                (list 'odd? odd?)
+                (list 'integer? integer?)
+                (list 'sqrt sqrt)
+                (list 'square square)
+                (list 'quotient quotient)
+                (list 'max max)
+                (list 'min min))))
+
+(define amb-prelude
+  '((define (require p)
+      (if (not p) (amb)))
+    (define (an-element-of items)
+      (require (not (null? items)))
+      (amb (car items) (an-element-of (cdr items))))
+    (define (an-integer-starting-from n)
+      (amb n (an-integer-starting-from (+ n 1))))
+    (define (distinct? items)
+      (cond ((null? items) true)
+            ((null? (cdr items)) true)
+            ((member (car items) (cdr items)) false)
+            (else (distinct? (cdr items)))))))
+
+;;; Running programs non-interactively
+
+(define (amb-define! env exp)
+  (ambeval exp env
+           (lambda (value fail) value)
+           (lambda () (error "Definition has no value -- AMB-DEFINE!" exp))))
+
+;; A fresh global environment holding the prelude and the given definitions.
+(define (amb-environment . definitions)
+  (let ((env (setup-environment)))
+    (for-each (lambda (exp) (amb-define! env exp))
+              (append amb-prelude definitions))
+    env))
+
+(define (amb-define-primitive! env name procedure)
+  (define-variable! name (list 'primitive procedure) env))
+
+;; The values of exp in the order amb finds them: all of them, or at most
+;; limit of them.
+(define (amb-collect exp env #!optional limit)
+  (let ((results '())
+        (found 0))
+    (ambeval exp env
+             (lambda (value next)
+               (set! results (cons value results))
+               (set! found (+ found 1))
+               (if (or (default-object? limit) (< found limit))
+                   (next)))
+             (lambda () 'no-more-values))
+    (reverse results)))
+
+;; The number of procedure applications performed by thunk.
+(define (count-applications thunk)
+  (let ((before application-count))
+    (thunk)
+    (- application-count before)))
