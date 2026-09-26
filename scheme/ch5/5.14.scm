@@ -10,9 +10,7 @@
         (cdr (assq 'total-pushes (stack-statistics factorial-machine)))
         (cdr (assq 'maximum-depth (stack-statistics factorial-machine)))))
 
-(define (iota-from-1 count) (iota count 1))
-
-(check (map factorial-statistics (iota-from-1 5))
+(check (map factorial-statistics (iota 5 1))
        => '((1 0 0) (2 2 2) (3 4 4) (4 6 6) (5 8 8)))
 
 ;; Each of the n - 1 recursive calls pushes continue and n, and nothing is
@@ -21,4 +19,4 @@
 (for-each (lambda (n)
             (check (factorial-statistics n)
                    => (list n (* 2 (- n 1)) (* 2 (- n 1)))))
-          (iota-from-1 20))
+          (iota 20 1))

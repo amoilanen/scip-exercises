@@ -1,0 +1,20 @@
+(load "lib/check.scm")
+(load "ch5/5.40.scm")
+
+(define (find-variable var compile-time-env)
+  (define (scan-frames frames frame-number)
+    (if (null? frames)
+        'not-found
+        (let scan ((vars (car frames)) (displacement 0))
+          (cond ((null? vars)
+                 (scan-frames (cdr frames) (+ frame-number 1)))
+                ((eq? (car vars) var)
+                 (make-lexical-address frame-number displacement))
+                (else (scan (cdr vars) (+ displacement 1)))))))
+  (scan-frames compile-time-env 0))
+
+(check (find-variable 'c '((y z) (a b c d e) (x y))) => '(1 2))
+(check (find-variable 'x '((y z) (a b c d e) (x y))) => '(2 0))
+(check (find-variable 'w '((y z) (a b c d e) (x y))) => 'not-found)
+(check (find-variable 'y '((y z) (a b c d e) (x y))) => '(0 0))
+(check (find-variable 'x '()) => 'not-found)

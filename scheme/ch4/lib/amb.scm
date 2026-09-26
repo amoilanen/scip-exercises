@@ -225,6 +225,21 @@
 
 ;;; The global environment
 
+;; The book's lookup scans a frame with an interpreted loop, and looking up
+;; primitives in the large global frame dominates the running time of the
+;; puzzles; scanning with the built-in memq makes them about twice as fast.
+(define (lookup-variable-value var env)
+  (let env-loop ((env env))
+    (if (eq? env the-empty-environment)
+        (error "Unbound variable" var)
+        (let* ((frame (first-frame env))
+               (vars (frame-variables frame))
+               (tail (memq var vars)))
+          (if tail
+              (list-ref (frame-values frame)
+                        (- (length vars) (length tail)))
+              (env-loop (enclosing-environment env)))))))
+
 (define primitive-procedures
   (append primitive-procedures
           (list (list 'caddr caddr)

@@ -35,7 +35,9 @@
     fib-done))
 
 (define (make-shorter-fib-machine)
-  (make-machine '(n val continue) arithmetic-operations shorter-fib-controller))
+  (make-machine '(n val continue)
+                arithmetic-operations
+                shorter-fib-controller))
 
 (define (fib-values machine-maker)
   (map (lambda (n) (run-machine (machine-maker) (list (list 'n n)) 'val))

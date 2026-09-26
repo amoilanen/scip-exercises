@@ -59,11 +59,11 @@
 
 (define (operation-expression name operations)
   (let ((operation (find (lambda (op) (eq? (item-name op) name)) operations)))
-    (if (not operation)
-        (error "Unknown operation" name))
-    (cons (list 'op name)
-          (map (lambda (input) (car (source->expression input operations)))
-               (cdr (assq 'inputs operation))))))
+    (if operation
+        (cons (list 'op name)
+              (map (lambda (input) (car (source->expression input operations)))
+                   (cdr (assq 'inputs operation))))
+        (error "Unknown operation" name))))
 
 (define (register-buttons registers operations)
   (append-map

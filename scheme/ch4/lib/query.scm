@@ -297,10 +297,9 @@
 ;; start with a variable go under the key ?.
 (define (store-in-index! index pattern item)
   (if (indexable? pattern)
-      (let ((key (index-key-of pattern)))
-        (hash-table-set! index
-                         key
-                         (cons-stream item (get-stream index key))))))
+      (let* ((key (index-key-of pattern))
+             (current (get-stream index key)))
+        (hash-table-set! index key (cons-stream item current)))))
 
 (define (indexable? pattern)
   (or (constant-symbol? (car pattern))

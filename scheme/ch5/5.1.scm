@@ -5,7 +5,8 @@
 ;; Data paths of the iterative factorial:
 ;;
 ;;   registers   n, product, counter
-;;   operations  mul: product * counter,  add: counter + 1,  test >: counter > n
+;;   operations  mul: product * counter,  add: counter + 1,
+;;               test >: counter > n
 ;;   buttons     p<-1 (constant 1 into product),  p<-mul (mul into product),
 ;;               c<-1 (constant 1 into counter),  c<-add (add into counter)
 ;;

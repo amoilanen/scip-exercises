@@ -91,6 +91,5 @@ static inline bool is_pointer(Value v)
 }
 
 bool is_eq(Value a, Value b);
-bool is_equal(Value a, Value b);
 
 #endif
