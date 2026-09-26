@@ -5,6 +5,9 @@
 
 void init_evaluator(void);
 
+/* Clears the registers and the stack after an error. */
+void reset_evaluator(void);
+
 /* Runs the explicit-control evaluator on exp in env and returns the value. */
 Value evaluate(Value exp, Value env);
 

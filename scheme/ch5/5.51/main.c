@@ -19,7 +19,7 @@ static bool driver_loop(FILE *input)
     static bool failed = false;
     if (setjmp(error_recovery)) {
         failed = true;
-        reset_stack();
+        reset_evaluator();
         reset_protection();
     }
     for (;;) {

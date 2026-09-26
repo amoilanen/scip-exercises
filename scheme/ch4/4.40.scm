@@ -49,16 +49,11 @@
                             env))
        => 120)
 
-(define book-env (apply amb-environment multiple-dwelling-program))
-
-(define (solutions-and-work env)
-  (let ((solutions '()))
-    (let ((work (count-applications
-                 (lambda ()
-                   (set! solutions (amb-collect '(multiple-dwelling) env))))))
-      (cons solutions work))))
-
-(let ((book (solutions-and-work book-env))
-      (fast (solutions-and-work env)))
-  (check (car fast) => (car book))
-  (check (< (* 10 (cdr fast)) (cdr book)) => #t))
+;; The book's version makes over 50000 procedure applications (see 4.39);
+;; this one needs fewer than one per assignment the book's version examines.
+(check (amb-collect '(multiple-dwelling) env)
+       => '(((baker 3) (cooper 2) (fletcher 4) (miller 5) (smith 1))))
+(check (< (count-applications
+           (lambda () (amb-collect '(multiple-dwelling) env)))
+          3125)
+       => #t)

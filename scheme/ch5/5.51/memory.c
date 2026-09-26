@@ -23,7 +23,11 @@ static size_t free_cell;
 static Value stack[STACK_SIZE];
 static size_t stack_top;
 
-static Value *roots[MAX_ROOTS];
+/* Each root is an array of values: a register or a table of constants. */
+static struct {
+    Value *values;
+    size_t count;
+} roots[MAX_ROOTS];
 static int root_count;
 static Value *protected[MAX_PROTECTED];
 static int protected_count;
@@ -69,8 +73,10 @@ static void collect_garbage(Value *car, Value *cdr)
     free_cell = 0;
     *car = relocate(*car);
     *cdr = relocate(*cdr);
-    for (int i = 0; i < root_count; i++)
-        *roots[i] = relocate(*roots[i]);
+    for (int i = 0; i < root_count; i++) {
+        for (size_t j = 0; j < roots[i].count; j++)
+            roots[i].values[j] = relocate(roots[i].values[j]);
+    }
     for (int i = 0; i < protected_count; i++)
         *protected[i] = relocate(*protected[i]);
     for (size_t i = 0; i < stack_top; i++)
@@ -165,13 +171,20 @@ void reset_stack(void)
     stack_top = 0;
 }
 
-void add_root(Value *location)
+void add_roots(Value *values, size_t count)
 {
     if (root_count == MAX_ROOTS) {
         fputs("Too many roots\n", stderr);
         exit(EXIT_FAILURE);
     }
-    roots[root_count++] = location;
+    roots[root_count].values = values;
+    roots[root_count].count = count;
+    root_count++;
+}
+
+void add_root(Value *location)
+{
+    add_roots(location, 1);
 }
 
 void protect(Value *location)

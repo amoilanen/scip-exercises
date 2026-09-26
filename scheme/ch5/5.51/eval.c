@@ -55,6 +55,13 @@ void init_evaluator(void)
     symbol.ok = intern("ok");
 }
 
+void reset_evaluator(void)
+{
+    reg.exp = reg.env = reg.val = reg.proc = reg.argl = reg.unev = EMPTY_LIST;
+    reg.cont = make_label(DONE);
+    reset_stack();
+}
+
 /*** Syntax ***/
 
 static bool is_tagged_list(Value exp, Value tag)

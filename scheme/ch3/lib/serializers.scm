@@ -26,6 +26,7 @@
 (define running-process #f)
 (define return-to-scheduler #f)
 (define scheduled-choices '())
+(define trail '())
 (define end-run #f)
 
 ;; Runs thunk as one step, once ready? holds; ready? must not have effects.
@@ -58,52 +59,62 @@
                           always)))
     process))
 
-;; Runs process until it pauses before its next step or finishes.
-(define (resume! process)
-  (call-with-current-continuation
-   (lambda (return)
-     (set! return-to-scheduler return)
-     (set! running-process process)
-     ((process-continue process) 'resume)))
-  (set! running-process #f))
+(define (run! process)
+  (set! running-process process)
+  ((process-continue process) 'resume))
 
-;; A run replays the choices made so far; when they run out at a real
-;; choice, the run ends and asks for a choice among the ready processes.
+;; A run follows the given choices of which ready process moves next, then
+;; always picks the first one, recording every choice in the trail, most
+;; recent first.  The next run changes the last choice that has an untried
+;; alternative, so the runs go through the orders depth first.
 (define (choose processes)
-  (cond ((null? (cdr processes)) (car processes))
-        ((pair? scheduled-choices)
-         (let ((choice (car scheduled-choices)))
-           (set! scheduled-choices (cdr scheduled-choices))
-           (list-ref processes choice)))
-        (else (end-run (cons 'choose (length processes))))))
+  (if (null? (cdr processes))
+      (car processes)
+      (let ((choice (if (pair? scheduled-choices) (car scheduled-choices) 0)))
+        (if (pair? scheduled-choices)
+            (set! scheduled-choices (cdr scheduled-choices)))
+        (set! trail (cons (cons choice (length processes)) trail))
+        (list-ref processes choice))))
+
+(define (next-choices trail)
+  (cond ((null? trail) #f)
+        ((< (+ (caar trail) 1) (cdar trail))
+         (reverse (cons (+ (caar trail) 1) (map car (cdr trail)))))
+        (else (next-choices (cdr trail)))))
 
 (define (parallel-execute . thunks)
-  (let ((processes (map spawn thunks)))
-    (for-each resume! processes)
-    (let loop ()
-      (let ((ready (filter runnable? processes)))
-        (cond ((pair? ready)
-               (resume! (choose ready))
-               (loop))
-              ((not (every finished? processes))
-               (end-run (cons 'outcome 'deadlock))))))))
+  (let* ((processes (map spawn thunks))
+         (unstarted processes))
+    ;; Each process comes back here whenever it pauses or finishes.
+    (call-with-current-continuation
+     (lambda (scheduler) (set! return-to-scheduler scheduler)))
+    (set! running-process #f)
+    (if (pair? unstarted)
+        (let ((process (car unstarted)))
+          (set! unstarted (cdr unstarted))
+          (run! process))
+        (let ((ready (filter runnable? processes)))
+          (cond ((pair? ready) (run! (choose ready)))
+                ((not (every finished? processes)) (end-run 'deadlock)))))))
 
 (define (run-world world choices)
+  (set! scheduled-choices choices)
+  (set! trail '())
   (call-with-current-continuation
    (lambda (return)
      (set! end-run return)
-     (set! scheduled-choices choices)
-     (cons 'outcome (world)))))
+     (world))))
 
 (define (possible-outcomes world)
-  (define (explore choices)
-    (let ((result (run-world world choices)))
-      (if (eq? (car result) 'outcome)
-          (list (cdr result))
-          (append-map (lambda (choice)
-                        (explore (append choices (list choice))))
-                      (iota (cdr result))))))
-  (delete-duplicates (explore '())))
+  (let loop ((choices '()) (outcomes '()))
+    (let* ((outcome (run-world world choices))
+           (outcomes (if (member outcome outcomes)
+                         outcomes
+                         (cons outcome outcomes)))
+           (next (next-choices trail)))
+      (if next
+          (loop next outcomes)
+          (reverse outcomes)))))
 
 (define (same-set? outcomes expected)
   (lset= equal? outcomes expected))

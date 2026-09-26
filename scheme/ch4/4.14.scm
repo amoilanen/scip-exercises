@@ -5,7 +5,7 @@
 ;; mc-apply, which knows how to apply both kinds of evaluator procedures.
 ;; Louis's map is the underlying Scheme's map installed as a primitive: it
 ;; receives evaluator procedure objects, which are just lists such as
-;; (procedure (x) ((* x x)) <env>) or (primitive #[compiled-procedure car]),
+;; (procedure (x) ((* x x)) <env>) or (primitive <Scheme car>),
 ;; and tries to call them as Scheme procedures, which fails.
 
 (define eva-map

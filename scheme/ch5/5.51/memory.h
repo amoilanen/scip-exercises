@@ -36,6 +36,7 @@ Value restore(void);
 void reset_stack(void);
 
 void add_root(Value *location);
+void add_roots(Value *values, size_t count);
 void protect(Value *location);
 void unprotect(int count);
 void reset_protection(void);

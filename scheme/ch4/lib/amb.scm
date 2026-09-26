@@ -258,6 +258,7 @@
                 (list 'length length)
                 (list 'reverse reverse)
                 (list 'memq memq)
+                (list 'assq assq)
                 (list 'member member)
                 (list 'even? even?)
                 (list 'odd? odd?)
@@ -318,6 +319,20 @@
   (let ((before application-count))
     (thunk)
     (- application-count before)))
+
+;; The value of thunk, or the symbol out-of-budget as soon as thunk has made
+;; more than budget applications: a way to observe a search that never ends.
+(define (with-application-budget budget thunk)
+  (call-with-current-continuation
+   (lambda (return)
+     (let ((limit (+ application-count budget))
+           (execute execute-application))
+       (fluid-let ((execute-application
+                    (lambda (proc args succeed fail)
+                      (if (> application-count limit)
+                          (return 'out-of-budget))
+                      (execute proc args succeed fail))))
+         (thunk))))))
 
 ;;; Programs of section 4.3.2 used by several exercises
 

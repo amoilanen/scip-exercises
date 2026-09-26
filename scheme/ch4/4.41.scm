@@ -1,0 +1,36 @@
+(load "lib/check.scm")
+
+(define (permutations items)
+  (if (null? items)
+      '(())
+      (append-map (lambda (first)
+                    (map (lambda (rest) (cons first rest))
+                         (permutations (delete first items))))
+                  items)))
+
+(define (adjacent? a b)
+  (= (abs (- a b)) 1))
+
+(define (satisfies-requirements? baker cooper fletcher miller smith)
+  (and (not (= baker 5))
+       (not (= cooper 1))
+       (not (= fletcher 5))
+       (not (= fletcher 1))
+       (> miller cooper)
+       (not (adjacent? smith fletcher))
+       (not (adjacent? fletcher cooper))))
+
+(define (multiple-dwelling)
+  (map (lambda (floors)
+         (map list '(baker cooper fletcher miller smith) floors))
+       (filter (lambda (floors)
+                 (apply satisfies-requirements? floors))
+               (permutations '(1 2 3 4 5)))))
+
+(check (permutations '()) => '(()))
+(check (permutations '(1 2 3))
+       => '((1 2 3) (1 3 2) (2 1 3) (2 3 1) (3 1 2) (3 2 1)))
+(check (length (permutations '(1 2 3 4 5))) => 120)
+
+(check (multiple-dwelling)
+       => '(((baker 3) (cooper 2) (fletcher 4) (miller 5) (smith 1))))
