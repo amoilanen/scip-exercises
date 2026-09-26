@@ -1,11 +1,12 @@
-;; The metacircular evaluator of section 4.1, as given in the book.
+;; The metacircular evaluator of section 4.1.
 ;; Exercises load this file and redefine the procedures they change.
-
-(define apply-in-underlying-scheme apply)
+;;
+;; The book's eval and apply are called mc-eval and mc-apply here so that
+;; MIT Scheme's own eval and apply stay intact for the rest of the program.
 
 ;;; Eval and apply
 
-(define (eval exp env)
+(define (mc-eval exp env)
   (cond ((self-evaluating? exp) exp)
         ((variable? exp) (lookup-variable-value exp env))
         ((quoted? exp) (text-of-quotation exp))
@@ -18,14 +19,14 @@
                          env))
         ((begin? exp)
          (eval-sequence (begin-actions exp) env))
-        ((cond? exp) (eval (cond->if exp) env))
+        ((cond? exp) (mc-eval (cond->if exp) env))
         ((application? exp)
-         (apply (eval (operator exp) env)
-                (list-of-values (operands exp) env)))
+         (mc-apply (mc-eval (operator exp) env)
+                   (list-of-values (operands exp) env)))
         (else
          (error "Unknown expression type -- EVAL" exp))))
 
-(define (apply procedure arguments)
+(define (mc-apply procedure arguments)
   (cond ((primitive-procedure? procedure)
          (apply-primitive-procedure procedure arguments))
         ((compound-procedure? procedure)
@@ -41,28 +42,28 @@
 (define (list-of-values exps env)
   (if (no-operands? exps)
       '()
-      (cons (eval (first-operand exps) env)
+      (cons (mc-eval (first-operand exps) env)
             (list-of-values (rest-operands exps) env))))
 
 (define (eval-if exp env)
-  (if (true? (eval (if-predicate exp) env))
-      (eval (if-consequent exp) env)
-      (eval (if-alternative exp) env)))
+  (if (true? (mc-eval (if-predicate exp) env))
+      (mc-eval (if-consequent exp) env)
+      (mc-eval (if-alternative exp) env)))
 
 (define (eval-sequence exps env)
-  (cond ((last-exp? exps) (eval (first-exp exps) env))
-        (else (eval (first-exp exps) env)
+  (cond ((last-exp? exps) (mc-eval (first-exp exps) env))
+        (else (mc-eval (first-exp exps) env)
               (eval-sequence (rest-exps exps) env))))
 
 (define (eval-assignment exp env)
   (set-variable-value! (assignment-variable exp)
-                       (eval (assignment-value exp) env)
+                       (mc-eval (assignment-value exp) env)
                        env)
   'ok)
 
 (define (eval-definition exp env)
   (define-variable! (definition-variable exp)
-                    (eval (definition-value exp) env)
+                    (mc-eval (definition-value exp) env)
                     env)
   'ok)
 
@@ -260,8 +261,7 @@
        primitive-procedures))
 
 (define (apply-primitive-procedure proc args)
-  (apply-in-underlying-scheme
-   (primitive-implementation proc) args))
+  (apply (primitive-implementation proc) args))
 
 (define (setup-environment)
   (let ((initial-env
@@ -280,7 +280,7 @@
 (define (driver-loop)
   (prompt-for-input input-prompt)
   (let ((input (read)))
-    (let ((output (eval input the-global-environment)))
+    (let ((output (mc-eval input the-global-environment)))
       (announce-output output-prompt)
       (user-print output)))
   (driver-loop))
@@ -306,4 +306,4 @@
     (let loop ((exps exps) (value 'ok))
       (if (null? exps)
           value
-          (loop (cdr exps) (eval (car exps) env))))))
+          (loop (cdr exps) (mc-eval (car exps) env))))))
