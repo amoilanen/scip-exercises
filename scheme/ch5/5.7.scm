@@ -1,3 +1,4 @@
+(load "lib/check.scm")
 (load "ch5/5.4.scm")
 
 (define (expt-machine-run make-expt-machine result-register b n)
