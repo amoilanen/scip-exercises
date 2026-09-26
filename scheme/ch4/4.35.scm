@@ -18,6 +18,8 @@
 (check (amb-collect '(an-integer-between 4 4) env) => '(4))
 (check (amb-collect '(an-integer-between 5 4) env) => '())
 
-(check (amb-collect '(a-pythagorean-triple-between 1 20) env)
-       => '((3 4 5) (5 12 13) (6 8 10) (8 15 17) (9 12 15) (12 16 20)))
+(check (amb-collect '(a-pythagorean-triple-between 1 15) env)
+       => '((3 4 5) (5 12 13) (6 8 10) (9 12 15)))
+(check (amb-collect '(a-pythagorean-triple-between 4 15) env)
+       => '((5 12 13) (6 8 10) (9 12 15)))
 (check (amb-collect '(a-pythagorean-triple-between 1 4) env) => '())

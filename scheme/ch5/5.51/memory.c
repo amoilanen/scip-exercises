@@ -16,7 +16,7 @@
 #define MAX_ROOTS 32
 #define MAX_PROTECTED 1024
 
-static Value *the_cars, *the_cdrs;
+Value *the_cars, *the_cdrs;
 static Value *new_cars, *new_cdrs;
 static size_t free_cell;
 
@@ -114,43 +114,25 @@ Value cons(Value car, Value cdr)
     return make_cell(TYPE_PAIR, car, cdr);
 }
 
-Value cell_car(Value cell)
+void wrong_type_pair(const char *operation, Value object)
 {
-    return the_cars[cell.as.index];
-}
-
-Value cell_cdr(Value cell)
-{
-    return the_cdrs[cell.as.index];
-}
-
-static void check_pair(const char *operation, Value v)
-{
-    if (!is_pair(v))
-        scheme_error(operation, v);
-}
-
-Value car(Value pair)
-{
-    check_pair("The object passed to car is not a pair:", pair);
-    return the_cars[pair.as.index];
-}
-
-Value cdr(Value pair)
-{
-    check_pair("The object passed to cdr is not a pair:", pair);
-    return the_cdrs[pair.as.index];
+    static char message[64];
+    snprintf(message, sizeof message,
+             "The object passed to %s is not a pair:", operation);
+    scheme_error(message, object);
 }
 
 void set_car(Value pair, Value value)
 {
-    check_pair("The object passed to set-car! is not a pair:", pair);
+    if (!is_pair(pair))
+        wrong_type_pair("set-car!", pair);
     the_cars[pair.as.index] = value;
 }
 
 void set_cdr(Value pair, Value value)
 {
-    check_pair("The object passed to set-cdr! is not a pair:", pair);
+    if (!is_pair(pair))
+        wrong_type_pair("set-cdr!", pair);
     the_cdrs[pair.as.index] = value;
 }
 

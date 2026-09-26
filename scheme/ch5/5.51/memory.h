@@ -15,14 +15,32 @@ void init_memory(void);
 Value cons(Value car, Value cdr);
 Value make_cell(Type type, Value car, Value cdr);
 
-Value car(Value pair);
-Value cdr(Value pair);
-void set_car(Value pair, Value value);
-void set_cdr(Value pair, Value value);
+/* The halves of the cells, indexed by the pointers. They are defined
+ * here so that the accessors below can be inline. */
+extern Value *the_cars, *the_cdrs;
+
+void wrong_type_pair(const char *operation, Value object);
 
 /* Unchecked access to the two halves of a pair, procedure or other cell. */
-Value cell_car(Value cell);
-Value cell_cdr(Value cell);
+static inline Value cell_car(Value cell) { return the_cars[cell.as.index]; }
+static inline Value cell_cdr(Value cell) { return the_cdrs[cell.as.index]; }
+
+static inline Value car(Value pair)
+{
+    if (!is_pair(pair))
+        wrong_type_pair("car", pair);
+    return cell_car(pair);
+}
+
+static inline Value cdr(Value pair)
+{
+    if (!is_pair(pair))
+        wrong_type_pair("cdr", pair);
+    return cell_cdr(pair);
+}
+
+void set_car(Value pair, Value value);
+void set_cdr(Value pair, Value value);
 
 static inline Value caar(Value v) { return car(car(v)); }
 static inline Value cadr(Value v) { return car(cdr(v)); }

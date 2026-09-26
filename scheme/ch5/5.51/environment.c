@@ -60,13 +60,15 @@ Value extend_environment(Value parameters, Value arguments, Value base)
 }
 
 /* Returns the pair of the frame's value list that holds the variable's
- * value, or the empty list if the frame has no binding for it. */
+ * value, or the empty list if the frame has no binding for it. Variables
+ * are symbols, which are equal when their indices are. */
 static Value find_in_frame(Value variable, Value frame)
 {
     Value variables = frame_variables(frame);
     Value values = frame_values(frame);
     for (; is_pair(variables); variables = cdr(variables)) {
-        if (is_eq(car(variables), variable))
+        Value candidate = car(variables);
+        if (is_symbol(candidate) && candidate.as.index == variable.as.index)
             return values;
         values = cdr(values);
     }

@@ -28,10 +28,13 @@
         (propagate)
         (changes)))))
 
-(define swap-time (+ and-gate-delay and-gate-delay))
+;; The output settles at 0 one and-gate delay in, when the inputs change;
+;; it reacts one delay later.
+(define settled and-gate-delay)
+(define reacted (* 2 and-gate-delay))
 
 (check (and-gate-inputs-swap)
-       => (list (list and-gate-delay 0) (list swap-time 1) (list swap-time 0)))
+       => (list (list settled 0) (list reacted 1) (list reacted 0)))
 
 (check (fluid-let ((make-queue make-stack)
                    (empty-queue? empty-stack?)
@@ -39,4 +42,4 @@
                    (insert-queue! push!)
                    (delete-queue! pop!))
          (and-gate-inputs-swap))
-       => (list (list and-gate-delay 0) (list swap-time 1)))
+       => (list (list settled 0) (list reacted 1)))

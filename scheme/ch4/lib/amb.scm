@@ -252,22 +252,14 @@
 
 (define primitive-procedures
   (append primitive-procedures
-          (list (list 'caddr caddr)
-                (list 'cdddr cdddr)
-                (list 'append append)
-                (list 'length length)
-                (list 'reverse reverse)
+          (list (list 'reverse reverse)
                 (list 'memq memq)
                 (list 'assq assq)
                 (list 'member member)
                 (list 'even? even?)
-                (list 'odd? odd?)
                 (list 'integer? integer?)
                 (list 'sqrt sqrt)
-                (list 'square square)
-                (list 'quotient quotient)
-                (list 'max max)
-                (list 'min min))))
+                (list 'square square))))
 
 (define amb-prelude
   '((define (require p)
@@ -296,9 +288,6 @@
     (for-each (lambda (exp) (amb-define! env exp))
               (append amb-prelude definitions))
     env))
-
-(define (amb-define-primitive! env name procedure)
-  (define-variable! name (list 'primitive procedure) env))
 
 ;; The values of exp in the order amb finds them: all of them, or at most
 ;; limit of them.

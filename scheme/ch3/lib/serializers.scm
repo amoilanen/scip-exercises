@@ -52,7 +52,7 @@
 
 (define (spawn thunk)
   (letrec ((process
-            (make-process (lambda (resume)
+            (make-process (lambda (ignored)
                             (thunk)
                             (set-process-continue! process #f)
                             (return-to-scheduler 'finished))
@@ -63,24 +63,29 @@
   (set! running-process process)
   ((process-continue process) 'resume))
 
-;; A run follows the given choices of which ready process moves next, then
-;; always picks the first one, recording every choice in the trail, most
-;; recent first.  The next run changes the last choice that has an untried
-;; alternative, so the runs go through the orders depth first.
+;; A run makes the scheduled choices of which ready process moves next,
+;; then always picks the first one, recording every choice in the trail,
+;; most recent first.  The next run changes the last choice that has an
+;; untried alternative, so the runs go through all orders depth first.
+(define (next-scheduled-choice)
+  (if (null? scheduled-choices)
+      0
+      (let ((choice (car scheduled-choices)))
+        (set! scheduled-choices (cdr scheduled-choices))
+        choice)))
+
 (define (choose processes)
   (if (null? (cdr processes))
       (car processes)
-      (let ((choice (if (pair? scheduled-choices) (car scheduled-choices) 0)))
-        (if (pair? scheduled-choices)
-            (set! scheduled-choices (cdr scheduled-choices)))
+      (let ((choice (next-scheduled-choice)))
         (set! trail (cons (cons choice (length processes)) trail))
         (list-ref processes choice))))
 
-(define (next-choices trail)
-  (cond ((null? trail) #f)
-        ((< (+ (caar trail) 1) (cdar trail))
-         (reverse (cons (+ (caar trail) 1) (map car (cdr trail)))))
-        (else (next-choices (cdr trail)))))
+(define (next-choices choices)
+  (cond ((null? choices) #f)
+        ((< (+ (caar choices) 1) (cdar choices))
+         (reverse (cons (+ (caar choices) 1) (map car (cdr choices)))))
+        (else (next-choices (cdr choices)))))
 
 (define (parallel-execute . thunks)
   (let* ((processes (map spawn thunks))

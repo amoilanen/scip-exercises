@@ -29,12 +29,12 @@
 
 (define (all-parses program)
   (with-application-budget
-   20000
+   5000
    (lambda () (amb-collect sentence (apply amb-environment program)))))
 
 (define (first-parse program)
   (with-application-budget
-   20000
+   5000
    (lambda () (amb-collect sentence (apply amb-environment program) 1))))
 
 (check (all-parses parser-program)
