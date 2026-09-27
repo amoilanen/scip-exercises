@@ -1,356 +1,139 @@
-//! The primitive procedures, and the global environment that binds them.
-//!
-//! Each primitive gets its arguments as a list, whose length
-//! `apply_primitive_procedure` has checked against the primitive's arity.
+use crate::machine::{Machine, Result, Value, Value::*};
 
-use std::cmp::Ordering;
-
-use crate::error::{Error, Result};
-use crate::machine::Machine;
-use crate::object::Value;
-
-pub struct Primitive {
-    pub name: &'static str,
-    /// The number of arguments, or the minimum if variadic.
-    pub arity: usize,
-    pub variadic: bool,
-    pub function: fn(&mut Machine, Value) -> Result<Value>,
-}
-
-const fn fixed(
-    name: &'static str,
-    arity: usize,
-    function: fn(&mut Machine, Value) -> Result<Value>,
-) -> Primitive {
-    Primitive {
-        name,
-        arity,
-        variadic: false,
-        function,
-    }
-}
-
-const fn variadic(
-    name: &'static str,
-    arity: usize,
-    function: fn(&mut Machine, Value) -> Result<Value>,
-) -> Primitive {
-    Primitive {
-        name,
-        arity,
-        variadic: true,
-        function,
-    }
-}
-
-pub static PRIMITIVES: &[Primitive] = &[
-    fixed("car", 1, |m, args| m.car(m.car(args)?)),
-    fixed("cdr", 1, |m, args| m.cdr(m.car(args)?)),
-    fixed("caar", 1, |m, args| m.caar(m.car(args)?)),
-    fixed("cadr", 1, |m, args| m.cadr(m.car(args)?)),
-    fixed("cdar", 1, |m, args| m.cdar(m.car(args)?)),
-    fixed("cddr", 1, |m, args| m.cddr(m.car(args)?)),
-    fixed("caadr", 1, |m, args| m.car(m.cadr(m.car(args)?)?)),
-    fixed("cdadr", 1, |m, args| m.cdr(m.cadr(m.car(args)?)?)),
-    fixed("caddr", 1, |m, args| m.caddr(m.car(args)?)),
-    fixed("cdddr", 1, |m, args| m.cdddr(m.car(args)?)),
-    fixed("cadddr", 1, |m, args| m.car(m.cdddr(m.car(args)?)?)),
-    fixed("cons", 2, |m, args| {
-        let (car, cdr) = (m.car(args)?, m.cadr(args)?);
-        m.cons(car, cdr)
-    }),
-    fixed("set-car!", 2, |m, args| {
-        let (pair, value) = (m.car(args)?, m.cadr(args)?);
-        m.set_car(pair, value)?;
-        Ok(Value::Unspecified)
-    }),
-    fixed("set-cdr!", 2, |m, args| {
-        let (pair, value) = (m.car(args)?, m.cadr(args)?);
-        m.set_cdr(pair, value)?;
-        Ok(Value::Unspecified)
-    }),
-    // The argument list is always freshly made, so it can be the result.
-    variadic("list", 0, |_, args| Ok(args)),
-    fixed("length", 1, prim_length),
-    fixed("null?", 1, |m, args| {
-        Ok(Value::Boolean(m.car(args)?.is_null()))
-    }),
-    fixed("pair?", 1, |m, args| {
-        Ok(Value::Boolean(m.car(args)?.is_pair()))
-    }),
-    fixed("number?", 1, |m, args| {
-        Ok(Value::Boolean(m.car(args)?.is_number()))
-    }),
-    fixed("symbol?", 1, |m, args| {
-        Ok(Value::Boolean(m.car(args)?.is_symbol()))
-    }),
-    fixed("string?", 1, |m, args| {
-        Ok(Value::Boolean(matches!(m.car(args)?, Value::Str(_))))
-    }),
-    fixed("procedure?", 1, |m, args| {
-        Ok(Value::Boolean(matches!(
-            m.car(args)?,
-            Value::Primitive(_) | Value::Procedure(_)
-        )))
-    }),
-    fixed("eq?", 2, |m, args| {
-        Ok(Value::Boolean(m.car(args)? == m.cadr(args)?))
-    }),
-    fixed("equal?", 2, |m, args| {
-        Ok(Value::Boolean(is_equal(m, m.car(args)?, m.cadr(args)?)))
-    }),
-    fixed("not", 1, |m, args| {
-        Ok(Value::Boolean(m.car(args)?.is_false()))
-    }),
-    variadic("+", 0, |m, args| {
-        fold_numbers(m, add, Value::Fixnum(0), args)
-    }),
-    variadic("-", 1, |m, args| {
-        let first = m.car(args)?;
-        let rest = m.cdr(args)?;
-        if rest.is_null() {
-            subtract(m, Value::Fixnum(0), first)
-        } else {
-            fold_numbers(m, subtract, first, rest)
-        }
-    }),
-    variadic("*", 0, |m, args| {
-        fold_numbers(m, multiply, Value::Fixnum(1), args)
-    }),
-    variadic("/", 1, |m, args| {
-        let first = m.car(args)?;
-        let rest = m.cdr(args)?;
-        if rest.is_null() {
-            divide(m, Value::Fixnum(1), first)
-        } else {
-            fold_numbers(m, divide, first, rest)
-        }
-    }),
-    variadic("=", 1, |m, args| compare_all(m, args, Ordering::is_eq)),
-    variadic("<", 1, |m, args| compare_all(m, args, Ordering::is_lt)),
-    variadic(">", 1, |m, args| compare_all(m, args, Ordering::is_gt)),
-    variadic("<=", 1, |m, args| compare_all(m, args, Ordering::is_le)),
-    variadic(">=", 1, |m, args| compare_all(m, args, Ordering::is_ge)),
-    fixed("quotient", 2, |m, args| integer_division(m, args, true)),
-    fixed("remainder", 2, |m, args| integer_division(m, args, false)),
-    fixed("abs", 1, |m, args| {
-        let x = m.car(args)?;
-        if to_double(m, x)? < 0.0 {
-            subtract(m, Value::Fixnum(0), x)
-        } else {
-            Ok(x)
-        }
-    }),
-    fixed("display", 1, |m, args| {
-        let text = m.display_to_string(m.car(args)?);
-        m.output(&text);
-        Ok(Value::Unspecified)
-    }),
-    fixed("newline", 0, |m, _| {
-        m.output("\n");
-        Ok(Value::Unspecified)
-    }),
-    variadic("error", 1, |m, args| match m.car(args)? {
-        Value::Str(index) => Err(m.error_list(m.texts.string_text(index), m.cdr(args)?)),
-        _ => Err(m.error_list("Error:", args)),
-    }),
+#[rustfmt::skip]
+const PRIMITIVES: &[&str] = &[
+    "car", "cdr", "caar", "cadr", "cdar", "cddr", "caadr", "cdadr", "caddr", "cdddr", "cadddr",
+    "cons", "set-car!", "set-cdr!", "list", "length", "null?", "pair?", "number?", "symbol?",
+    "string?", "procedure?", "eq?", "equal?", "not", "+", "-", "*", "/", "=", "<", ">", "<=", ">=",
+    "quotient", "remainder", "abs", "display", "newline", "error",
 ];
 
-/*** Numbers ***/
-
-fn to_double(m: &Machine, v: Value) -> Result<f64> {
-    match v {
-        Value::Fixnum(n) => Ok(n as f64),
-        Value::Flonum(x) => Ok(x),
-        _ => Err(m.error("The object is not a number:", v)),
-    }
-}
-
-fn to_integer(m: &Machine, v: Value) -> Result<i64> {
-    match v {
-        Value::Fixnum(n) => Ok(n),
-        _ => Err(m.error("The object is not an integer:", v)),
-    }
-}
-
-fn integer_overflow() -> Error {
-    Error::abort("Integer overflow")
-}
-
-type Operation = fn(&Machine, Value, Value) -> Result<Value>;
-
-fn add(m: &Machine, a: Value, b: Value) -> Result<Value> {
-    if let (Value::Fixnum(x), Value::Fixnum(y)) = (a, b) {
-        return x
-            .checked_add(y)
-            .map(Value::Fixnum)
-            .ok_or_else(integer_overflow);
-    }
-    Ok(Value::Flonum(to_double(m, a)? + to_double(m, b)?))
-}
-
-fn subtract(m: &Machine, a: Value, b: Value) -> Result<Value> {
-    if let (Value::Fixnum(x), Value::Fixnum(y)) = (a, b) {
-        return x
-            .checked_sub(y)
-            .map(Value::Fixnum)
-            .ok_or_else(integer_overflow);
-    }
-    Ok(Value::Flonum(to_double(m, a)? - to_double(m, b)?))
-}
-
-fn multiply(m: &Machine, a: Value, b: Value) -> Result<Value> {
-    if let (Value::Fixnum(x), Value::Fixnum(y)) = (a, b) {
-        return x
-            .checked_mul(y)
-            .map(Value::Fixnum)
-            .ok_or_else(integer_overflow);
-    }
-    Ok(Value::Flonum(to_double(m, a)? * to_double(m, b)?))
-}
-
-/// Integer division gives an integer only when it is exact.
-fn divide(m: &Machine, a: Value, b: Value) -> Result<Value> {
-    let divisor = to_double(m, b)?;
-    if divisor == 0.0 {
-        return Err(Error::abort("Division by zero signalled by /."));
-    }
-    if let (Value::Fixnum(x), Value::Fixnum(y)) = (a, b) {
-        if x.checked_rem(y) == Some(0) {
-            return Ok(Value::Fixnum(x / y));
-        }
-    }
-    Ok(Value::Flonum(to_double(m, a)? / divisor))
-}
-
-fn fold_numbers(
-    m: &Machine,
-    operation: Operation,
-    initial: Value,
-    arguments: Value,
-) -> Result<Value> {
-    let mut result = initial;
-    let mut list = arguments;
-    while list.is_pair() {
-        result = operation(m, result, m.cell_car(list))?;
-        list = m.cell_cdr(list);
-    }
-    Ok(result)
-}
-
-fn integer_division(m: &Machine, args: Value, quotient: bool) -> Result<Value> {
-    let dividend = m.car(args)?;
-    let x = to_integer(m, dividend)?;
-    let y = to_integer(m, m.cadr(args)?)?;
-    if y == 0 {
-        return Err(Error::abort(
-            "Division by zero signalled by integer division.",
-        ));
-    }
-    if y == -1 {
-        // Dividing the most negative fixnum by -1 overflows.
-        return if quotient {
-            subtract(m, Value::Fixnum(0), dividend)
-        } else {
-            Ok(Value::Fixnum(0))
-        };
-    }
-    Ok(Value::Fixnum(if quotient { x / y } else { x % y }))
-}
-
-/// Unordered flonums, that is NaNs, compare equal.
-fn compare(m: &Machine, a: Value, b: Value) -> Result<Ordering> {
-    if let (Value::Fixnum(x), Value::Fixnum(y)) = (a, b) {
-        return Ok(x.cmp(&y));
-    }
-    let (x, y) = (to_double(m, a)?, to_double(m, b)?);
-    Ok(x.partial_cmp(&y).unwrap_or(Ordering::Equal))
-}
-
-/// Compares every pair of neighbouring arguments, so that each of them is
-/// checked to be a number.
-fn compare_all(m: &Machine, args: Value, relation: fn(Ordering) -> bool) -> Result<Value> {
-    let first = m.car(args)?;
-    if !first.is_number() {
-        return Err(m.error("The object is not a number:", first));
-    }
-    let mut holds = true;
-    let mut list = args;
-    while m.cell_cdr(list).is_pair() {
-        let next = m.cell_cdr(list);
-        if !relation(compare(m, m.cell_car(list), m.cell_car(next))?) {
-            holds = false;
-        }
-        list = next;
-    }
-    Ok(Value::Boolean(holds))
-}
-
-/*** Lists ***/
-
-fn prim_length(m: &mut Machine, args: Value) -> Result<Value> {
-    let mut length = 0;
-    let mut list = m.car(args)?;
-    while list.is_pair() {
-        length += 1;
-        list = m.cell_cdr(list);
-    }
-    if !list.is_null() {
-        return Err(m.error("The object is not a list:", m.car(args)?));
-    }
-    Ok(Value::Fixnum(length))
-}
-
-fn is_equal(m: &Machine, a: Value, b: Value) -> bool {
-    let (mut a, mut b) = (a, b);
-    while a.is_pair() && b.is_pair() {
-        if !is_equal(m, m.cell_car(a), m.cell_car(b)) {
-            return false;
-        }
-        a = m.cell_cdr(a);
-        b = m.cell_cdr(b);
-    }
-    if let (Value::Str(i), Value::Str(j)) = (a, b) {
-        return m.texts.string_text(i) == m.texts.string_text(j);
-    }
-    a == b
-}
-
-/*** The global environment ***/
-
 impl Machine {
-    /// Makes a global environment with the primitive procedures and the
-    /// variables true and false.
-    pub fn setup_environment(&mut self) -> Result<Value> {
-        let env = self.extend_environment(Value::EmptyList, Value::EmptyList, Value::EmptyList)?;
-        let env = self.protect(env)?;
-        for (index, primitive) in PRIMITIVES.iter().enumerate() {
-            let name = self.intern(primitive.name);
-            self.define_variable(name, Value::Primitive(index), self.protected(env))?;
-        }
-        let name = self.intern("true");
-        self.define_variable(name, Value::Boolean(true), self.protected(env))?;
-        let name = self.intern("false");
-        self.define_variable(name, Value::Boolean(false), self.protected(env))?;
-        let global_env = self.protected(env);
-        self.unprotect(1);
-        Ok(global_env)
+    pub fn setup_environment(&mut self) -> Value {
+        let constants = [(Symbol("true"), Bool(true)), (Symbol("false"), Bool(false))];
+        let (variables, values): (Vec<_>, Vec<_>) =
+            PRIMITIVES.iter().map(|&name| (Symbol(name), Primitive(name))).chain(constants).unzip();
+        let frame = self.make_frame(&variables, &values);
+        self.cons(frame, Nil)
     }
 
-    pub fn apply_primitive_procedure(&mut self, index: usize, arguments: Value) -> Result<Value> {
-        let primitive = &PRIMITIVES[index];
-        let mut count = 0;
-        let mut list = arguments;
-        while list.is_pair() {
-            count += 1;
-            list = self.cell_cdr(list);
+    pub fn apply_primitive_procedure(
+        &mut self,
+        name: &'static str,
+        args: &[Value],
+    ) -> Result<Value> {
+        Ok(match (name, args) {
+            ("cons", &[car, cdr]) => self.cons(car, cdr),
+            ("set-car!", &[pair, value]) => {
+                self.set_car(pair, value)?;
+                Unspecified
+            }
+            ("set-cdr!", &[pair, value]) => {
+                self.set_cdr(pair, value)?;
+                Unspecified
+            }
+            ("list", _) => self.list(args, Nil),
+            ("length", &[list]) => Int(self.to_vec(list)?.len() as i64),
+            ("null?", &[x]) => Bool(x == Nil),
+            ("pair?", &[x]) => Bool(matches!(x, Pair(_))),
+            ("number?", &[x]) => Bool(matches!(x, Int(_) | Float(_))),
+            ("symbol?", &[x]) => Bool(matches!(x, Symbol(_))),
+            ("string?", &[x]) => Bool(matches!(x, Str(_))),
+            ("procedure?", &[x]) => Bool(matches!(x, Primitive(_) | Procedure(_))),
+            ("eq?", &[a, b]) => Bool(a == b),
+            ("equal?", &[a, b]) => Bool(self.is_equal(a, b)),
+            ("not", &[x]) => Bool(x == Bool(false)),
+            ("+", _) => self.fold(name, Int(0), args)?,
+            ("*", _) => self.fold(name, Int(1), args)?,
+            ("-", &[x]) => self.arithmetic(name, Int(0), x)?,
+            ("/", &[x]) => self.arithmetic(name, Int(1), x)?,
+            ("-" | "/", &[first, ref rest @ ..]) => self.fold(name, first, rest)?,
+            ("=" | "<" | ">" | "<=" | ">=", &[_, ..]) => self.compare(name, args)?,
+            ("quotient" | "remainder", &[a, b]) => {
+                let (x, y) = (self.integer(a)?, self.integer(b)?);
+                if y == 0 {
+                    return Err("Division by zero signalled by integer division.".into());
+                }
+                Int(if name == "quotient" { x.wrapping_div(y) } else { x.wrapping_rem(y) })
+            }
+            ("abs", &[x]) if self.number(x)? < 0.0 => self.arithmetic("-", Int(0), x)?,
+            ("abs", &[x]) => x,
+            ("display", &[x]) => {
+                print!("{}", self.show(x, false));
+                Unspecified
+            }
+            ("newline", []) => {
+                println!();
+                Unspecified
+            }
+            ("error", &[Str(message), ref irritants @ ..]) => {
+                return Err(self.error(message, irritants))
+            }
+            ("error", &[_, ..]) => return Err(self.error("Error:", args)),
+            (_, &[x]) if name.starts_with('c') && name.ends_with('r') => self.cxr(name, x)?,
+            _ => return Err(self.error("Wrong number of arguments passed to", &[Primitive(name)])),
+        })
+    }
+
+    fn number(&self, x: Value) -> Result<f64> {
+        match x {
+            Int(n) => Ok(n as f64),
+            Float(f) => Ok(f),
+            _ => Err(self.error("The object is not a number:", &[x])),
         }
-        if count < primitive.arity || (count > primitive.arity && !primitive.variadic) {
-            return Err(self.error(
-                "Wrong number of arguments passed to",
-                Value::Primitive(index),
-            ));
+    }
+
+    fn integer(&self, x: Value) -> Result<i64> {
+        match x {
+            Int(n) => Ok(n),
+            _ => Err(self.error("The object is not an integer:", &[x])),
         }
-        (primitive.function)(self, arguments)
+    }
+
+    /// Integers stay exact unless the result overflows or is a fraction.
+    fn arithmetic(&self, operator: &str, a: Value, b: Value) -> Result<Value> {
+        if operator == "/" && self.number(b)? == 0.0 {
+            return Err("Division by zero signalled by /.".into());
+        }
+        if let (Int(x), Int(y)) = (a, b) {
+            let exact = match operator {
+                "+" => x.checked_add(y),
+                "-" => x.checked_sub(y),
+                "*" => x.checked_mul(y),
+                _ => x.checked_rem(y).filter(|&r| r == 0).and(x.checked_div(y)),
+            };
+            if let Some(n) = exact {
+                return Ok(Int(n));
+            }
+        }
+        let (x, y) = (self.number(a)?, self.number(b)?);
+        Ok(Float(match operator {
+            "+" => x + y,
+            "-" => x - y,
+            "*" => x * y,
+            _ => x / y,
+        }))
+    }
+
+    fn fold(&self, operator: &str, initial: Value, args: &[Value]) -> Result<Value> {
+        args.iter().try_fold(initial, |result, &x| self.arithmetic(operator, result, x))
+    }
+
+    fn compare(&self, operator: &str, args: &[Value]) -> Result<Value> {
+        let numbers = args.iter().map(|&x| self.number(x)).collect::<Result<Vec<_>>>()?;
+        Ok(Bool(numbers.windows(2).all(|pair| match operator {
+            "=" => pair[0] == pair[1],
+            "<" => pair[0] < pair[1],
+            ">" => pair[0] > pair[1],
+            "<=" => pair[0] <= pair[1],
+            _ => pair[0] >= pair[1],
+        })))
+    }
+
+    fn is_equal(&self, a: Value, b: Value) -> bool {
+        let ((xs, x_tail), (ys, y_tail)) = (self.items(a), self.items(b));
+        x_tail == y_tail
+            && xs.len() == ys.len()
+            && xs.iter().zip(&ys).all(|(&x, &y)| self.is_equal(x, y))
     }
 }

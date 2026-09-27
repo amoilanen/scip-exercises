@@ -1,19 +1,10 @@
-//! The explicit-control evaluator of section 5.4 written in Rust.
-//!
-//! The registers are fields of `Registers` and the controller is one loop
-//! over the labels of the book's controller: each step executes the
-//! instructions after a label and yields the label to go to next. The
-//! continue register holds a `Label`, and going to it is going to the label
-//! it holds. Procedure application and sequences do not save anything
-//! before their last step, so the evaluator runs iterative processes in
-//! constant space.
+//! The explicit-control evaluator of section 5.4. Each arm of `execute` runs
+//! the instructions after a label of the book's controller and returns the
+//! label to go to next.
 
-use crate::error::Result;
-use crate::machine::Machine;
-use crate::object::{Texts, Value};
+use crate::machine::{Machine, Result, Value, Value::*, MEMORY_SIZE};
 
-/// The labels of the controller.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Label {
     Done,
     EvalDispatch,
@@ -21,7 +12,6 @@ pub enum Label {
     EvApplDidOperator,
     EvApplOperandLoop,
     EvApplAccumulateArg,
-    EvApplLastArg,
     EvApplAccumLastArg,
     ApplyDispatch,
     EvSequence,
@@ -37,436 +27,294 @@ pub enum Label {
     EvDefinition1,
 }
 
-pub struct Registers {
-    pub exp: Value,
-    pub env: Value,
-    pub val: Value,
-    pub cont: Value,
-    pub proc: Value,
-    pub argl: Value,
-    pub unev: Value,
-}
-
-impl Registers {
-    pub fn new() -> Registers {
-        Registers {
-            exp: Value::EmptyList,
-            env: Value::EmptyList,
-            val: Value::EmptyList,
-            cont: Value::Label(Label::Done),
-            proc: Value::EmptyList,
-            argl: Value::EmptyList,
-            unev: Value::EmptyList,
-        }
-    }
-
-    /// The registers as roots of the garbage collector.
-    pub fn all_mut(&mut self) -> [&mut Value; 7] {
-        [
-            &mut self.exp,
-            &mut self.env,
-            &mut self.val,
-            &mut self.cont,
-            &mut self.proc,
-            &mut self.argl,
-            &mut self.unev,
-        ]
-    }
-}
-
-/// The symbols of the special forms, and ok, the value of definitions and
-/// assignments.
-#[derive(Clone, Copy)]
-pub struct Keywords {
-    quote: Value,
-    set: Value,
-    define: Value,
-    if_: Value,
-    lambda: Value,
-    begin: Value,
-    cond: Value,
-    let_: Value,
-    else_: Value,
-    ok: Value,
-}
-
-impl Keywords {
-    pub fn new(texts: &mut Texts) -> Keywords {
-        Keywords {
-            quote: texts.intern("quote"),
-            set: texts.intern("set!"),
-            define: texts.intern("define"),
-            if_: texts.intern("if"),
-            lambda: texts.intern("lambda"),
-            begin: texts.intern("begin"),
-            cond: texts.intern("cond"),
-            let_: texts.intern("let"),
-            else_: texts.intern("else"),
-            ok: texts.intern("ok"),
-        }
-    }
-}
-
-fn is_self_evaluating(exp: Value) -> bool {
-    matches!(
-        exp,
-        Value::Fixnum(_) | Value::Flonum(_) | Value::Str(_) | Value::Boolean(_)
-    )
-}
-
-/*** Syntax ***/
+use self::Label::*;
 
 impl Machine {
-    fn is_tagged_list(&self, exp: Value, tag: Value) -> bool {
-        exp.is_pair() && self.cell_car(exp) == tag
-    }
-
-    fn make_lambda(&mut self, parameters: Value, body: Value) -> Result<Value> {
-        let rest = self.cons(parameters, body)?;
-        self.cons(self.keywords.lambda, rest)
-    }
-
-    fn definition_variable(&self, exp: Value) -> Result<Value> {
-        let target = self.cadr(exp)?;
-        if target.is_symbol() {
-            Ok(target)
-        } else {
-            self.car(target)
-        }
-    }
-
-    fn definition_value(&mut self, exp: Value) -> Result<Value> {
-        let target = self.cadr(exp)?;
-        if target.is_symbol() {
-            return self.caddr(exp);
-        }
-        let (parameters, body) = (self.cdr(target)?, self.cddr(exp)?);
-        self.make_lambda(parameters, body)
-    }
-
-    fn reverse_in_place(&mut self, list: Value) -> Result<Value> {
-        let mut reversed = Value::EmptyList;
-        let mut list = list;
-        while list.is_pair() {
-            let rest = self.cell_cdr(list);
-            self.set_cdr(list, reversed)?;
-            reversed = list;
-            list = rest;
-        }
-        Ok(reversed)
-    }
-
-    /// (let ((v e) ...) body ...) is ((lambda (v ...) body ...) e ...)
-    fn let_to_combination(&mut self, exp: Value) -> Result<Value> {
-        let bindings = self.cadr(exp)?;
-        let exp = self.protect(exp)?;
-        let bindings = self.protect(bindings)?;
-        let variables = self.protect(Value::EmptyList)?;
-        let operands = self.protect(Value::EmptyList)?;
-        while self.protected(bindings).is_pair() {
-            let variable = self.caar(self.protected(bindings))?;
-            let list = self.cons(variable, self.protected(variables))?;
-            self.set_protected(variables, list);
-            let operand = self.cadr(self.car(self.protected(bindings))?)?;
-            let list = self.cons(operand, self.protected(operands))?;
-            self.set_protected(operands, list);
-            let rest = self.cell_cdr(self.protected(bindings));
-            self.set_protected(bindings, rest);
-        }
-        let parameters = self.reverse_in_place(self.protected(variables))?;
-        let body = self.cddr(self.protected(exp))?;
-        let lambda = self.make_lambda(parameters, body)?;
-        let arguments = self.reverse_in_place(self.protected(operands))?;
-        let combination = self.cons(lambda, arguments)?;
-        self.unprotect(4);
-        Ok(combination)
-    }
-
-    fn make_procedure(&mut self, lambda: Value, env: Value) -> Result<Value> {
-        self.make_cell(Value::Procedure, lambda, env)
-    }
-
-    fn procedure_parameters(&self, procedure: Value) -> Result<Value> {
-        self.cadr(self.cell_car(procedure))
-    }
-
-    fn procedure_body(&self, procedure: Value) -> Result<Value> {
-        self.cddr(self.cell_car(procedure))
-    }
-
-    fn procedure_environment(&self, procedure: Value) -> Value {
-        self.cell_cdr(procedure)
-    }
-}
-
-/*** The controller ***/
-
-impl Machine {
-    /// Clears the registers and the stack after an error.
-    pub fn reset_evaluator(&mut self) {
-        self.reg = Registers::new();
-        self.stack.clear();
-        self.protected.clear();
-    }
-
-    /// Runs the explicit-control evaluator on exp in env and returns the
-    /// value.
-    pub fn evaluate(&mut self, exp: Value, env: Value) -> Result<Value> {
-        self.reg.exp = exp;
-        self.reg.env = env;
-        self.reg.cont = Value::Label(Label::Done);
+    pub fn evaluate(&mut self, exp: Value) -> Result<Value> {
+        self.exp = exp;
+        self.env = self.global_env;
+        self.cont = Value::Label(Done);
         self.execute()?;
-        Ok(self.reg.val)
+        Ok(self.val)
     }
 
-    /// (goto (reg continue))
-    fn go_to_continue(&self) -> Result<Label> {
-        match self.reg.cont {
-            Value::Label(label) => Ok(label),
-            other => Err(self.error("Not a label:", other)),
+    fn go_to_continue(&self) -> Label {
+        match self.cont {
+            Value::Label(label) => label,
+            _ => unreachable!("continue always holds a label"),
         }
     }
 
     fn execute(&mut self) -> Result<()> {
-        let keywords = self.keywords;
-        let mut label = Label::EvalDispatch;
+        let mut label = EvalDispatch;
         loop {
             label = match label {
-                Label::Done => return Ok(()),
-
-                Label::EvalDispatch => {
-                    let exp = self.reg.exp;
-                    if is_self_evaluating(exp) {
-                        self.reg.val = exp;
-                        self.go_to_continue()?
-                    } else if exp.is_symbol() {
-                        self.reg.val = self.lookup_variable_value(exp, self.reg.env)?;
-                        self.go_to_continue()?
-                    } else if self.is_tagged_list(exp, keywords.quote) {
-                        self.reg.val = self.cadr(exp)?;
-                        self.go_to_continue()?
-                    } else if self.is_tagged_list(exp, keywords.set) {
-                        Label::EvAssignment
-                    } else if self.is_tagged_list(exp, keywords.define) {
-                        Label::EvDefinition
-                    } else if self.is_tagged_list(exp, keywords.if_) {
-                        Label::EvIf
-                    } else if self.is_tagged_list(exp, keywords.lambda) {
-                        self.reg.val = self.make_procedure(exp, self.reg.env)?;
-                        self.go_to_continue()?
-                    } else if self.is_tagged_list(exp, keywords.begin) {
-                        self.reg.unev = self.cdr(exp)?;
-                        self.save(self.reg.cont)?;
-                        Label::EvSequence
-                    } else if self.is_tagged_list(exp, keywords.cond) {
-                        Label::EvCond
-                    } else if self.is_tagged_list(exp, keywords.let_) {
-                        self.reg.exp = self.let_to_combination(exp)?;
-                        Label::EvApplication
-                    } else if exp.is_pair() {
-                        Label::EvApplication
-                    } else {
-                        return Err(self.error("Unknown expression type", exp));
+                Done => return Ok(()),
+                EvalDispatch => {
+                    if self.memory_used() >= MEMORY_SIZE {
+                        self.collect_garbage()?;
                     }
+                    self.eval_dispatch()?
                 }
 
-                Label::EvApplication => {
-                    self.save(self.reg.cont)?;
-                    self.save(self.reg.env)?;
-                    self.reg.unev = self.cdr(self.reg.exp)?;
-                    self.save(self.reg.unev)?;
-                    self.reg.exp = self.car(self.reg.exp)?;
-                    self.reg.cont = Value::Label(Label::EvApplDidOperator);
-                    Label::EvalDispatch
+                EvApplication => {
+                    self.save(self.cont)?;
+                    self.save(self.env)?;
+                    self.unev = self.cdr(self.exp)?;
+                    self.save(self.unev)?;
+                    self.exp = self.car(self.exp)?;
+                    self.cont = Value::Label(EvApplDidOperator);
+                    EvalDispatch
                 }
-                Label::EvApplDidOperator => {
-                    self.reg.unev = self.restore();
-                    self.reg.env = self.restore();
-                    self.reg.argl = Value::EmptyList;
-                    self.reg.proc = self.reg.val;
-                    if self.reg.unev.is_null() {
-                        Label::ApplyDispatch
+                EvApplDidOperator => {
+                    self.unev = self.restore();
+                    self.env = self.restore();
+                    self.argl = Nil;
+                    self.proc = self.val;
+                    if self.unev == Nil {
+                        ApplyDispatch
                     } else {
-                        self.save(self.reg.proc)?;
-                        Label::EvApplOperandLoop
+                        self.save(self.proc)?;
+                        EvApplOperandLoop
                     }
                 }
-                Label::EvApplOperandLoop => {
-                    self.save(self.reg.argl)?;
-                    self.reg.exp = self.car(self.reg.unev)?;
-                    if self.cdr(self.reg.unev)?.is_null() {
-                        Label::EvApplLastArg
+                EvApplOperandLoop => {
+                    self.save(self.argl)?;
+                    self.exp = self.car(self.unev)?;
+                    if self.cdr(self.unev)? == Nil {
+                        self.cont = Value::Label(EvApplAccumLastArg);
                     } else {
-                        self.save(self.reg.env)?;
-                        self.save(self.reg.unev)?;
-                        self.reg.cont = Value::Label(Label::EvApplAccumulateArg);
-                        Label::EvalDispatch
+                        self.save(self.env)?;
+                        self.save(self.unev)?;
+                        self.cont = Value::Label(EvApplAccumulateArg);
+                    }
+                    EvalDispatch
+                }
+                // argl collects the arguments in reverse order.
+                EvApplAccumulateArg => {
+                    self.unev = self.restore();
+                    self.env = self.restore();
+                    self.argl = self.restore();
+                    self.argl = self.cons(self.val, self.argl);
+                    self.unev = self.cdr(self.unev)?;
+                    EvApplOperandLoop
+                }
+                EvApplAccumLastArg => {
+                    self.argl = self.restore();
+                    self.argl = self.cons(self.val, self.argl);
+                    self.proc = self.restore();
+                    ApplyDispatch
+                }
+                ApplyDispatch => {
+                    let mut args = self.to_vec(self.argl)?;
+                    args.reverse();
+                    match self.proc {
+                        Primitive(name) => {
+                            self.val = self.apply_primitive_procedure(name, &args)?;
+                            self.cont = self.restore();
+                            self.go_to_continue()
+                        }
+                        Procedure(i) => {
+                            let (lambda, env) = self.procedure_parts(i);
+                            let parameters = self.cxr("cadr", lambda)?;
+                            self.env = self.extend_environment(parameters, &args, env)?;
+                            self.unev = self.cxr("cddr", lambda)?;
+                            EvSequence
+                        }
+                        proc => return Err(self.error("The object is not applicable:", &[proc])),
                     }
                 }
-                Label::EvApplAccumulateArg => {
-                    self.reg.unev = self.restore();
-                    self.reg.env = self.restore();
-                    self.reg.argl = self.restore();
-                    // The arguments are collected in reverse order.
-                    self.reg.argl = self.cons(self.reg.val, self.reg.argl)?;
-                    self.reg.unev = self.cdr(self.reg.unev)?;
-                    Label::EvApplOperandLoop
-                }
-                Label::EvApplLastArg => {
-                    self.reg.cont = Value::Label(Label::EvApplAccumLastArg);
-                    Label::EvalDispatch
-                }
-                Label::EvApplAccumLastArg => {
-                    self.reg.argl = self.restore();
-                    self.reg.argl = self.cons(self.reg.val, self.reg.argl)?;
-                    self.reg.argl = self.reverse_in_place(self.reg.argl)?;
-                    self.reg.proc = self.restore();
-                    Label::ApplyDispatch
-                }
-
-                Label::ApplyDispatch => match self.reg.proc {
-                    Value::Primitive(index) => {
-                        self.reg.val = self.apply_primitive_procedure(index, self.reg.argl)?;
-                        self.reg.cont = self.restore();
-                        self.go_to_continue()?
-                    }
-                    Value::Procedure(_) => {
-                        // extend_environment may move the procedure, so
-                        // the body is taken from the register afterwards.
-                        self.reg.unev = self.procedure_parameters(self.reg.proc)?;
-                        self.reg.env = self.procedure_environment(self.reg.proc);
-                        self.reg.env =
-                            self.extend_environment(self.reg.unev, self.reg.argl, self.reg.env)?;
-                        self.reg.unev = self.procedure_body(self.reg.proc)?;
-                        Label::EvSequence
-                    }
-                    procedure => {
-                        return Err(self.error("The object is not applicable:", procedure));
-                    }
-                },
 
                 // The caller has saved continue.
-                Label::EvSequence => {
-                    self.reg.exp = self.car(self.reg.unev)?;
-                    if self.cdr(self.reg.unev)?.is_null() {
-                        self.reg.cont = self.restore();
+                EvSequence => {
+                    self.exp = self.car(self.unev)?;
+                    if self.cdr(self.unev)? == Nil {
+                        self.cont = self.restore();
                     } else {
-                        self.save(self.reg.unev)?;
-                        self.save(self.reg.env)?;
-                        self.reg.cont = Value::Label(Label::EvSequenceContinue);
+                        self.save(self.unev)?;
+                        self.save(self.env)?;
+                        self.cont = Value::Label(EvSequenceContinue);
                     }
-                    Label::EvalDispatch
+                    EvalDispatch
                 }
-                Label::EvSequenceContinue => {
-                    self.reg.env = self.restore();
-                    self.reg.unev = self.restore();
-                    self.reg.unev = self.cdr(self.reg.unev)?;
-                    Label::EvSequence
+                EvSequenceContinue => {
+                    self.env = self.restore();
+                    self.unev = self.restore();
+                    self.unev = self.cdr(self.unev)?;
+                    EvSequence
                 }
 
-                Label::EvIf => {
-                    self.save(self.reg.exp)?;
-                    self.save(self.reg.env)?;
-                    self.save(self.reg.cont)?;
-                    self.reg.cont = Value::Label(Label::EvIfDecide);
-                    self.reg.exp = self.cadr(self.reg.exp)?;
-                    Label::EvalDispatch
+                EvIf => {
+                    self.save(self.exp)?;
+                    self.save(self.env)?;
+                    self.save(self.cont)?;
+                    self.cont = Value::Label(EvIfDecide);
+                    self.exp = self.cxr("cadr", self.exp)?;
+                    EvalDispatch
                 }
-                Label::EvIfDecide => {
-                    self.reg.cont = self.restore();
-                    self.reg.env = self.restore();
-                    self.reg.exp = self.restore();
-                    if self.reg.val.is_true() {
-                        self.reg.exp = self.caddr(self.reg.exp)?;
-                        Label::EvalDispatch
-                    } else if !self.cdddr(self.reg.exp)?.is_null() {
-                        self.reg.exp = self.car(self.cdddr(self.reg.exp)?)?;
-                        Label::EvalDispatch
+                EvIfDecide => {
+                    self.cont = self.restore();
+                    self.env = self.restore();
+                    self.exp = self.restore();
+                    if self.val != Bool(false) {
+                        self.exp = self.cxr("caddr", self.exp)?;
+                        EvalDispatch
+                    } else if self.cxr("cdddr", self.exp)? != Nil {
+                        self.exp = self.cxr("cadddr", self.exp)?;
+                        EvalDispatch
                     } else {
-                        self.reg.val = Value::Unspecified;
-                        self.go_to_continue()?
+                        self.val = Unspecified;
+                        self.go_to_continue()
                     }
                 }
 
-                // Clauses are tested one by one as in exercise 5.24.
-                Label::EvCond => {
-                    self.save(self.reg.cont)?;
-                    self.reg.unev = self.cdr(self.reg.exp)?;
-                    Label::EvCondLoop
+                // Clauses are tested one by one, as in exercise 5.24.
+                EvCond => {
+                    self.save(self.cont)?;
+                    self.unev = self.cdr(self.exp)?;
+                    EvCondLoop
                 }
-                Label::EvCondLoop => {
-                    if self.reg.unev.is_null() {
-                        self.reg.val = Value::Unspecified;
-                        self.reg.cont = self.restore();
-                        self.go_to_continue()?
+                EvCondLoop => {
+                    if self.unev == Nil {
+                        self.val = Unspecified;
+                        self.cont = self.restore();
+                        self.go_to_continue()
+                    } else if self.cxr("caar", self.unev)? == Symbol("else") {
+                        self.unev = self.cxr("cdar", self.unev)?;
+                        EvSequence
                     } else {
-                        self.reg.exp = self.car(self.reg.unev)?;
-                        if self.car(self.reg.exp)? == keywords.else_ {
-                            self.reg.unev = self.cdr(self.reg.exp)?;
-                            Label::EvSequence
-                        } else {
-                            self.save(self.reg.unev)?;
-                            self.save(self.reg.env)?;
-                            self.reg.exp = self.car(self.reg.exp)?;
-                            self.reg.cont = Value::Label(Label::EvCondDecide);
-                            Label::EvalDispatch
-                        }
+                        self.save(self.unev)?;
+                        self.save(self.env)?;
+                        self.exp = self.cxr("caar", self.unev)?;
+                        self.cont = Value::Label(EvCondDecide);
+                        EvalDispatch
                     }
                 }
-                Label::EvCondDecide => {
-                    self.reg.env = self.restore();
-                    self.reg.unev = self.restore();
-                    if self.reg.val.is_false() {
-                        self.reg.unev = self.cdr(self.reg.unev)?;
-                        Label::EvCondLoop
+                EvCondDecide => {
+                    self.env = self.restore();
+                    self.unev = self.restore();
+                    if self.val == Bool(false) {
+                        self.unev = self.cdr(self.unev)?;
+                        EvCondLoop
                     } else {
-                        self.reg.unev = self.cdar(self.reg.unev)?;
-                        if self.reg.unev.is_pair() {
-                            Label::EvSequence
+                        self.unev = self.cxr("cdar", self.unev)?;
+                        if self.unev == Nil {
+                            self.cont = self.restore();
+                            self.go_to_continue()
                         } else {
-                            // A clause without actions has the value of its test.
-                            self.reg.cont = self.restore();
-                            self.go_to_continue()?
+                            EvSequence
                         }
                     }
                 }
 
-                Label::EvAssignment => {
-                    self.reg.unev = self.cadr(self.reg.exp)?;
-                    self.save(self.reg.unev)?;
-                    self.reg.exp = self.caddr(self.reg.exp)?;
-                    self.save(self.reg.env)?;
-                    self.save(self.reg.cont)?;
-                    self.reg.cont = Value::Label(Label::EvAssignment1);
-                    Label::EvalDispatch
+                EvAssignment => {
+                    self.unev = self.cxr("cadr", self.exp)?;
+                    self.save(self.unev)?;
+                    self.exp = self.cxr("caddr", self.exp)?;
+                    self.save(self.env)?;
+                    self.save(self.cont)?;
+                    self.cont = Value::Label(EvAssignment1);
+                    EvalDispatch
                 }
-                Label::EvAssignment1 => {
-                    self.reg.cont = self.restore();
-                    self.reg.env = self.restore();
-                    self.reg.unev = self.restore();
-                    self.set_variable_value(self.reg.unev, self.reg.val, self.reg.env)?;
-                    self.reg.val = keywords.ok;
-                    self.go_to_continue()?
+                EvAssignment1 => {
+                    self.cont = self.restore();
+                    self.env = self.restore();
+                    self.unev = self.restore();
+                    self.set_variable_value(self.unev, self.val, self.env)?;
+                    self.val = Symbol("ok");
+                    self.go_to_continue()
                 }
 
-                Label::EvDefinition => {
-                    self.reg.unev = self.definition_variable(self.reg.exp)?;
-                    self.save(self.reg.unev)?;
-                    self.reg.exp = self.definition_value(self.reg.exp)?;
-                    self.save(self.reg.env)?;
-                    self.save(self.reg.cont)?;
-                    self.reg.cont = Value::Label(Label::EvDefinition1);
-                    Label::EvalDispatch
+                EvDefinition => {
+                    self.unev = self.definition_variable(self.exp)?;
+                    self.save(self.unev)?;
+                    self.exp = self.definition_value(self.exp)?;
+                    self.save(self.env)?;
+                    self.save(self.cont)?;
+                    self.cont = Value::Label(EvDefinition1);
+                    EvalDispatch
                 }
-                Label::EvDefinition1 => {
-                    self.reg.cont = self.restore();
-                    self.reg.env = self.restore();
-                    self.reg.unev = self.restore();
-                    self.define_variable(self.reg.unev, self.reg.val, self.reg.env)?;
-                    self.reg.val = keywords.ok;
-                    self.go_to_continue()?
+                EvDefinition1 => {
+                    self.cont = self.restore();
+                    self.env = self.restore();
+                    self.unev = self.restore();
+                    self.define_variable(self.unev, self.val, self.env)?;
+                    self.val = Symbol("ok");
+                    self.go_to_continue()
                 }
             };
         }
+    }
+
+    fn eval_dispatch(&mut self) -> Result<Label> {
+        let exp = self.exp;
+        Ok(match exp {
+            Int(_) | Float(_) | Str(_) | Bool(_) => {
+                self.val = exp;
+                self.go_to_continue()
+            }
+            Symbol(_) => {
+                self.val = self.lookup_variable_value(exp, self.env)?;
+                self.go_to_continue()
+            }
+            Pair(_) => match self.car(exp)? {
+                Symbol("quote") => {
+                    self.val = self.cxr("cadr", exp)?;
+                    self.go_to_continue()
+                }
+                Symbol("set!") => EvAssignment,
+                Symbol("define") => EvDefinition,
+                Symbol("if") => EvIf,
+                Symbol("lambda") => {
+                    self.val = self.make_procedure(exp, self.env);
+                    self.go_to_continue()
+                }
+                Symbol("begin") => {
+                    self.unev = self.cdr(exp)?;
+                    self.save(self.cont)?;
+                    EvSequence
+                }
+                Symbol("cond") => EvCond,
+                Symbol("let") => {
+                    self.exp = self.let_to_combination(exp)?;
+                    EvApplication
+                }
+                _ => EvApplication,
+            },
+            _ => return Err(self.error("Unknown expression type", &[exp])),
+        })
+    }
+
+    fn make_lambda(&mut self, parameters: Value, body: Value) -> Value {
+        let rest = self.cons(parameters, body);
+        self.cons(Symbol("lambda"), rest)
+    }
+
+    fn definition_variable(&self, exp: Value) -> Result<Value> {
+        match self.cxr("cadr", exp)? {
+            variable @ Symbol(_) => Ok(variable),
+            signature => self.car(signature),
+        }
+    }
+
+    fn definition_value(&mut self, exp: Value) -> Result<Value> {
+        match self.cxr("cadr", exp)? {
+            Symbol(_) => self.cxr("caddr", exp),
+            signature => {
+                let (parameters, body) = (self.cdr(signature)?, self.cxr("cddr", exp)?);
+                Ok(self.make_lambda(parameters, body))
+            }
+        }
+    }
+
+    /// (let ((v e) ...) body ...) is ((lambda (v ...) body ...) e ...)
+    fn let_to_combination(&mut self, exp: Value) -> Result<Value> {
+        let bindings = self.to_vec(self.cxr("cadr", exp)?)?;
+        let variables = bindings.iter().map(|&b| self.car(b)).collect::<Result<Vec<_>>>()?;
+        let operands = bindings.iter().map(|&b| self.cxr("cadr", b)).collect::<Result<Vec<_>>>()?;
+        let parameters = self.list(&variables, Nil);
+        let lambda = self.make_lambda(parameters, self.cxr("cddr", exp)?);
+        let operands = self.list(&operands, Nil);
+        Ok(self.cons(lambda, operands))
     }
 }
