@@ -10,8 +10,6 @@ mod machine;
 mod primitives;
 mod printer;
 mod reader;
-#[cfg(test)]
-mod test_support;
 
 use std::io::{self, BufRead, BufReader, Write};
 use std::process::ExitCode;
