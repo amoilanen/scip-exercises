@@ -41,7 +41,10 @@ fn cxr_applies_its_car_and_cdr_steps_from_right_to_left() {
     assert_eq!(machine.show(machine.cxr("cadr", list).unwrap(), true), "(2 3)");
     assert_eq!(machine.cxr("caadr", list).unwrap(), Int(2));
     assert_eq!(machine.show(machine.cxr("cddr", list).unwrap(), true), "(4)");
-    assert_eq!(machine.cxr("cadddr", list).unwrap_err().0, "The object passed to car is not a pair: ()");
+    assert_eq!(
+        machine.cxr("cadddr", list).unwrap_err().0,
+        "The object passed to car is not a pair: ()"
+    );
 }
 
 #[test]

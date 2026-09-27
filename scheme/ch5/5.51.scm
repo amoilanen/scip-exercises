@@ -16,12 +16,17 @@
   (apply string-append
          (map (lambda (string) (string-append string "\n")) strings)))
 
+(define (cargo command)
+  (run-command (string-append "cargo " command " --quiet"
+                              " --manifest-path ch5/5.51/Cargo.toml"
+                              " --target-dir ch5/5.51/target")
+               ""))
+
 ;; The build must be free of warnings, so cargo prints nothing.
-(check (run-command (string-append "cargo build --release --quiet"
-                                   " --manifest-path ch5/5.51/Cargo.toml"
-                                   " --target-dir ch5/5.51/target")
-                    "")
-       => '(0 . ""))
+(check (cargo "build --release") => '(0 . ""))
+
+;; The unit tests of each module and the integration tests of the program.
+(check (car (cargo "test")) => 0)
 
 (define interpreter "ch5/5.51/target/release/scheme")
 

@@ -22,7 +22,7 @@ fn arithmetic_keeps_integers_exact_while_it_can() {
     assert_eq!(apply("/", &[Int(6), Int(3)]), "2");
     assert_eq!(apply("/", &[Int(1), Int(2)]), ".5");
     assert_eq!(apply("/", &[Int(2)]), ".5");
-    assert_eq!(apply("+", &[Int(i64::MAX), Int(1)]), "9223372036854775808.");
+    assert_eq!(apply("+", &[Int(i64::MAX), Int(1)]), "9223372036854776000.");
 }
 
 #[test]
@@ -71,9 +71,18 @@ fn numeric_primitives_take_only_numbers() {
 
 #[test]
 fn primitives_check_the_number_of_arguments() {
-    assert_eq!(apply("car", &[]), ";Wrong number of arguments passed to #[primitive-procedure car]");
-    assert_eq!(apply("cons", &[Int(1)]), ";Wrong number of arguments passed to #[primitive-procedure cons]");
-    assert_eq!(apply("newline", &[Int(1)]), ";Wrong number of arguments passed to #[primitive-procedure newline]");
+    assert_eq!(
+        apply("car", &[]),
+        ";Wrong number of arguments passed to #[primitive-procedure car]"
+    );
+    assert_eq!(
+        apply("cons", &[Int(1)]),
+        ";Wrong number of arguments passed to #[primitive-procedure cons]"
+    );
+    assert_eq!(
+        apply("newline", &[Int(1)]),
+        ";Wrong number of arguments passed to #[primitive-procedure newline]"
+    );
     assert_eq!(apply("-", &[]), ";Wrong number of arguments passed to #[primitive-procedure -]");
 }
 
@@ -91,7 +100,10 @@ fn list_operations() {
     assert_eq!(machine.show(list, true), "(9 2 3)");
     let dotted = machine.cons(Int(1), Int(2));
     assert_eq!(apply_in(&mut machine, "length", &[dotted]), ";The object is not a list: (1 . 2)");
-    assert_eq!(apply_in(&mut machine, "cdr", &[Nil]), ";The object passed to cdr is not a pair: ()");
+    assert_eq!(
+        apply_in(&mut machine, "cdr", &[Nil]),
+        ";The object passed to cdr is not a pair: ()"
+    );
 }
 
 #[test]

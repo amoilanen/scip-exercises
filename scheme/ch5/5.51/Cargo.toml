@@ -6,3 +6,7 @@ description = "The explicit-control evaluator of SICP section 5.4 in Rust (exerc
 publish = false
 
 [dependencies]
+
+# The tests run programs that fill the memory many times over.
+[profile.dev]
+opt-level = 1

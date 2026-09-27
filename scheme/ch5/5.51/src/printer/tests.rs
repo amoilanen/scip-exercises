@@ -3,9 +3,13 @@ use super::*;
 #[test]
 fn atoms() {
     let machine = Machine::new();
-    let shown = [Nil, Bool(true), Bool(false), Int(-7), Symbol("sym"), Unspecified, Primitive("car")]
-        .map(|v| machine.show(v, true));
-    assert_eq!(shown, ["()", "#t", "#f", "-7", "sym", "#!unspecific", "#[primitive-procedure car]"]);
+    let shown =
+        [Nil, Bool(true), Bool(false), Int(-7), Symbol("sym"), Unspecified, Primitive("car")]
+            .map(|v| machine.show(v, true));
+    assert_eq!(
+        shown,
+        ["()", "#t", "#f", "-7", "sym", "#!unspecific", "#[primitive-procedure car]"]
+    );
 }
 
 #[test]
