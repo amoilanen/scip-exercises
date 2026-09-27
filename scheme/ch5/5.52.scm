@@ -3,7 +3,7 @@
 (load-option 'synchronous-subprocess)
 
 ;; Exercise 5.52: compile-to-c.scm turns Scheme programs into C, which is
-;; linked with runtime.c and the data layer of exercise 5.51. Compiled
+;; linked with runtime.c and the data layer next to it. Compiled
 ;; programs print only what they display; an error ends them with status 1.
 
 (define (run-command command input)
