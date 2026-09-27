@@ -117,3 +117,6 @@ fn atom(token: String) -> Value {
         _ => symbol(),
     }
 }
+
+#[cfg(test)]
+mod tests;

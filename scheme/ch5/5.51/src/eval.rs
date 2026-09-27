@@ -318,3 +318,6 @@ impl Machine {
         Ok(self.cons(lambda, operands))
     }
 }
+
+#[cfg(test)]
+mod tests;

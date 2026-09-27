@@ -86,3 +86,6 @@ impl Machine {
         self.set_cdr(frame, values)
     }
 }
+
+#[cfg(test)]
+mod tests;

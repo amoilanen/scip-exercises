@@ -26,6 +26,7 @@ pub enum Value {
     BrokenHeart(usize),
 }
 
+#[derive(Debug)]
 pub struct Error(pub String);
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -220,3 +221,6 @@ fn relocate(v: Value, old: &mut [(Value, Value)], new: &mut Vec<(Value, Value)>)
         _ => v,
     }
 }
+
+#[cfg(test)]
+mod tests;

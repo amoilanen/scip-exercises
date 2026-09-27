@@ -10,6 +10,8 @@ mod machine;
 mod primitives;
 mod printer;
 mod reader;
+#[cfg(test)]
+mod test_support;
 
 use std::io::{self, BufRead, BufReader, Write};
 use std::process::ExitCode;
@@ -29,21 +31,15 @@ fn main() -> ExitCode {
             }
         },
     };
-    let mut reader = Reader::new(input);
-    let mut machine = Machine::new();
     let mut failed = false;
-    loop {
-        match read_eval_print(&mut reader, &mut machine) {
-            Ok(true) => {}
-            Ok(false) => break,
-            Err(Error(message)) => {
-                failed = true;
-                io::stdout().flush().ok();
-                eprintln!(";{message}");
-                machine.reset();
-            }
+    driver_loop(&mut Reader::new(input), &mut Machine::new(), |output| match output {
+        Ok(text) => println!("{text}"),
+        Err(Error(message)) => {
+            failed = true;
+            io::stdout().flush().ok();
+            eprintln!(";{message}");
         }
-    }
+    });
     if failed {
         ExitCode::FAILURE
     } else {
@@ -51,14 +47,22 @@ fn main() -> ExitCode {
     }
 }
 
-/// Returns false at the end of the input.
-fn read_eval_print(reader: &mut Reader, machine: &mut Machine) -> Result<bool> {
-    let Some(exp) = reader.read(machine)? else {
-        return Ok(false);
-    };
-    let val = machine.evaluate(exp)?;
-    if val != Value::Unspecified {
-        println!("{}", machine.show(val, true));
+/// Evaluates each expression read and prints its value, unless it is
+/// unspecified, or the error that stopped it.
+fn driver_loop(reader: &mut Reader, machine: &mut Machine, mut print: impl FnMut(Result<String>)) {
+    loop {
+        let value = match reader.read(machine) {
+            Ok(None) => return,
+            Ok(Some(exp)) => machine.evaluate(exp),
+            Err(error) => Err(error),
+        };
+        match value {
+            Ok(Value::Unspecified) => {}
+            Ok(value) => print(Ok(machine.show(value, true))),
+            Err(error) => {
+                machine.reset();
+                print(Err(error));
+            }
+        }
     }
-    Ok(true)
 }

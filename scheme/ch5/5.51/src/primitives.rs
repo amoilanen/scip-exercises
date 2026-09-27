@@ -137,3 +137,6 @@ impl Machine {
             && xs.iter().zip(&ys).all(|(&x, &y)| self.is_equal(x, y))
     }
 }
+
+#[cfg(test)]
+mod tests;

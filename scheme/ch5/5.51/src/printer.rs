@@ -39,3 +39,6 @@ fn show_float(x: f64) -> String {
         x.to_string().trim_start_matches('0').into()
     }
 }
+
+#[cfg(test)]
+mod tests;
