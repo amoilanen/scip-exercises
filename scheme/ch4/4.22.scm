@@ -1,6 +1,6 @@
-(load "lib/check.scm")
-(load "ch4/4.6.scm")
-(load "ch4/lib/analyze.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "4.6.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/analyze.scm" (current-load-pathname)))
 
 (define analyze-without-let analyze)
 

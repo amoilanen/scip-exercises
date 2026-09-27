@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/lazy.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/lazy.scm" (current-load-pathname)))
 
 ;; In applicative-order Scheme (factorial 5) never returns: the operand
 ;; (* n (factorial (- n 1))) is evaluated before unless is applied, so every

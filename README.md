@@ -19,20 +19,19 @@ written for MIT/GNU Scheme.
 
 ## Running the tests
 
-Every solution from exercise 2.91 on carries its own checks. Run them from
-the `scheme` directory, which all `load` paths are relative to:
+Every solution from exercise 2.91 on carries its own checks. The `load`
+paths are relative to the file that contains them, so a solution can be
+loaded from any directory:
 
 ```sh
-cd scheme
-./run-tests.sh                            # all solutions
-./run-tests.sh ch3/3.17.scm ch4/4.6.scm   # selected solutions
+mit-scheme --quiet --load scheme/ch3/3.17.scm --eval '(exit)'
 ```
 
-A single file can also be run directly:
+The test runner takes paths relative to the `scheme` directory:
 
 ```sh
-cd scheme
-mit-scheme --quiet --load ch3/3.17.scm --eval '(exit)'
+scheme/run-tests.sh                            # all solutions
+scheme/run-tests.sh ch3/3.17.scm ch4/4.6.scm   # selected solutions
 ```
 
 A failing check stops with an error describing the expression, the expected

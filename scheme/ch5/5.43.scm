@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/5.42.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "5.42.scm" (current-load-pathname)))
 
 ;; An internal definition adds a binding to the frame at run time, which the
 ;; compile-time environment doesn't know about, and it moves the other

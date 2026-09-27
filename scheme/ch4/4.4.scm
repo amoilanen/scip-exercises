@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/mceval.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/mceval.scm" (current-load-pathname)))
 
 (define (and? exp) (tagged-list? exp 'and))
 (define (or? exp) (tagged-list? exp 'or))

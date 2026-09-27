@@ -1,6 +1,6 @@
-(load "lib/check.scm")
-(load "ch3/lib/circuits.scm")
-(load "ch3/3.28.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/circuits.scm" (current-load-pathname)))
+(load (merge-pathnames "3.28.scm" (current-load-pathname)))
 
 ;; The wire lists run from the most significant bit A1 to the least
 ;; significant An; the carry into An is a fresh wire, which stays 0.

@@ -8,7 +8,7 @@ cd "$(dirname "$0")"
 if [ "$#" -gt 0 ]; then
   files=("$@")
 else
-  mapfile -t files < <(grep -rl --include='*.scm' --exclude-dir=lib '"lib/check.scm"' . |
+  mapfile -t files < <(grep -rl --include='*.scm' --exclude-dir=lib 'lib/check.scm"' . |
                        sed 's|^\./||' | sort -V)
 fi
 

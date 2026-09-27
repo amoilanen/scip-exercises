@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/lib/serializers.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/serializers.scm" (current-load-pathname)))
 
 ;; Ordering fails when a process must already hold a shared resource to
 ;; find out which other resources it needs.  Say each account names a

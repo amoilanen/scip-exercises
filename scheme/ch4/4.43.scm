@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/amb.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/amb.scm" (current-load-pathname)))
 
 ;; Every father's yacht is known: Parker's is the one name left, Mary Ann.
 ;; Sir Barnacle's daughter is Melissa, so only four daughters remain to be

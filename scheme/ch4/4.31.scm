@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/lazy.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/lazy.scm" (current-load-pathname)))
 
 ;; Parameters are strict unless declared (name lazy) or (name lazy-memo).
 ;; The lazy evaluator's forcing of operators, primitive arguments and if

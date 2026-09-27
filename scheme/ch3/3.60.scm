@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/3.59.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "3.59.scm" (current-load-pathname)))
 
 ;; (a0 + A)(b0 + B) = a0 b0 + (a0 B + A (b0 + B)), where A and B are the
 ;; series without their constant terms.

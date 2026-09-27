@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/lib/circuits.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/circuits.scm" (current-load-pathname)))
 
 (define (logical-or s1 s2)
   (if (or (= s1 1) (= s2 1)) 1 0))

@@ -1,6 +1,6 @@
-(load "lib/check.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
 ;; Exercises 2.94-2.97 build on this file and need polynomial division too.
-(load "ch2/2.91.scm")
+(load (merge-pathnames "2.91.scm" (current-load-pathname)))
 
 (define (make-rat n d) (cons n d))
 

@@ -1,4 +1,4 @@
-(load "lib/check.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
 
 ;; Recursive version: (factorial 6) creates six frames E1..E6, each enclosed
 ;; by the global environment and binding n to 6, 5, 4, 3, 2 and 1.

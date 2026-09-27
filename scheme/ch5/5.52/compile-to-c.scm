@@ -9,7 +9,7 @@
 ;;
 ;;   (compile-to-c exps port)  writes a C program that evaluates exps
 
-(load "ch5/lib/compiler.scm")
+(load (merge-pathnames "../lib/compiler.scm" (current-load-pathname)))
 
 ;;; Derived expressions
 

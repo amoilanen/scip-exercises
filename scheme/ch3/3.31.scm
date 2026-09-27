@@ -1,6 +1,6 @@
-(load "lib/check.scm")
-(load "ch3/lib/circuits.scm")
-(load "ch3/3.28.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/circuits.scm" (current-load-pathname)))
+(load (merge-pathnames "3.28.scm" (current-load-pathname)))
 
 ;; A gate computes its output only when one of its actions runs.  Running
 ;; each action as it is added makes every gate compute an output from the

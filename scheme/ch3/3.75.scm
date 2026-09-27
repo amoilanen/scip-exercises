@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/3.74.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "3.74.scm" (current-load-pathname)))
 
 ;; Louis passes the average avpt on as last-value, so each "average" is
 ;; taken between a new value and the previous average: an ever longer

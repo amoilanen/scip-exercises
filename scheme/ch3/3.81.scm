@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/lib/streams.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/streams.scm" (current-load-pathname)))
 
 ;; A linear congruential generator.
 (define random-modulus (expt 2 32))

@@ -1,6 +1,6 @@
-(load "lib/check.scm")
-(load "ch5/lib/compiler.scm")
-(load "ch5/5.39.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/compiler.scm" (current-load-pathname)))
+(load (merge-pathnames "5.39.scm" (current-load-pathname)))
 
 ;; The compile-time environment is a list of frames, each a list of the
 ;; variables of a lambda.  Instead of being passed to compile and to every

@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/lib/streams.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/streams.scm" (current-load-pathname)))
 
 (define (mul-streams s1 s2) (stream-map * s1 s2))
 

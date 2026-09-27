@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/mceval.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/mceval.scm" (current-load-pathname)))
 
 ;; Eva's map is an evaluated procedure, so it calls its argument through
 ;; mc-apply, which knows how to apply both kinds of evaluator procedures.

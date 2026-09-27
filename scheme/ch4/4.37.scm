@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/4.35.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "4.35.scm" (current-load-pathname)))
 
 ;; Ben is right.  The original procedure explores every triple i <= j <= k,
 ;; about n^3/6 of them for a range of n integers.  Ben's chooses only i and

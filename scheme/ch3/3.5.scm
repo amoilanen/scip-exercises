@@ -1,4 +1,4 @@
-(load "lib/check.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
 
 (define (monte-carlo trials experiment)
   (let iter ((trials-remaining trials) (trials-passed 0))

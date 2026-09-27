@@ -1,4 +1,4 @@
-(load "lib/check.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
 
 ;; Floyd's algorithm: the fast pointer moves two pairs per step and the slow
 ;; one a single pair.  If there is a cycle, the fast pointer enters it and

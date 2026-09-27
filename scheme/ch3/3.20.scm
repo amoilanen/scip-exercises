@@ -1,4 +1,4 @@
-(load "lib/check.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
 
 ;; The procedural pairs get distinct names so that the built-in cons, car,
 ;; cdr, set-car! and set-cdr! stay intact.

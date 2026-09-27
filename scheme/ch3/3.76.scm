@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/3.75.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "3.75.scm" (current-load-pathname)))
 
 (define (average a b) (/ (+ a b) 2))
 

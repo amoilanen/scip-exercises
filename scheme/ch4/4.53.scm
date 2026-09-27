@@ -1,6 +1,6 @@
-(load "lib/check.scm")
-(load "ch4/4.51.scm")
-(load "ch4/4.52.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "4.51.scm" (current-load-pathname)))
+(load (merge-pathnames "4.52.scm" (current-load-pathname)))
 
 ;; Loading 4.52 reloaded the evaluator, which dropped permanent-set!.
 (install-special-form! 'permanent-set! analyze-permanent-assignment)

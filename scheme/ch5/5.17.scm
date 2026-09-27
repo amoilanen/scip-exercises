@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/5.16.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "5.16.scm" (current-load-pathname)))
 
 ;; Each instruction remembers the labels that immediately precede it. Labels
 ;; are still not instructions: they are neither executed nor counted by the

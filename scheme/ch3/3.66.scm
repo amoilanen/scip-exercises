@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/lib/streams.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/streams.scm" (current-load-pathname)))
 
 ;; interleave takes every other element from the pairs of the first row, so
 ;; the pairs of row i appear every 2^i steps, starting after the diagonal

@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/3.70.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "3.70.scm" (current-load-pathname)))
 
 (define sum-of-cubes (pair-weight (lambda (i j) (+ (cube i) (cube j)))))
 

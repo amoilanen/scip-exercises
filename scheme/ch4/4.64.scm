@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/query.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/query.scm" (current-load-pathname)))
 
 ;; After the first disjunct has found Ben's supervisor, the second one starts
 ;; with (outranked-by ?middle-manager ?boss), in which nothing is bound:

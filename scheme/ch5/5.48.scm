@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/lib/eceval-compiled.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/eceval-compiled.scm" (current-load-pathname)))
 
 ;; (compile-and-run exp) evaluates exp, compiles the resulting expression
 ;; in the current environment and runs the compiled code, which returns

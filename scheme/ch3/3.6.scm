@@ -1,4 +1,4 @@
-(load "lib/check.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
 
 (define (rand-update x)
   (modulo (+ (* 1103515245 x) 12345) 2147483648))

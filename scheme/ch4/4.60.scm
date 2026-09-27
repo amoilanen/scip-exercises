@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/query.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/query.scm" (current-load-pathname)))
 
 ;; lives-near is symmetric: whenever the frame with ?person-1 = A and
 ;; ?person-2 = B satisfies the rule, so does the one with the roles swapped,

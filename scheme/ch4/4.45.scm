@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/amb.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/amb.scm" (current-load-pathname)))
 
 ;; Reduces a parse to how its phrases attach: a simple noun phrase becomes
 ;; its noun, a prepositional phrase (preposition object), and a phrase with

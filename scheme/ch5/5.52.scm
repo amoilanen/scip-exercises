@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/5.52/compile-to-c.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "5.52/compile-to-c.scm" (current-load-pathname)))
 (load-option 'synchronous-subprocess)
 
 ;; Exercise 5.52: compile-to-c.scm turns Scheme programs into C, which is
@@ -17,7 +17,9 @@
   (apply string-append
          (map (lambda (string) (string-append string "\n")) strings)))
 
-(define directory "ch5/5.52/")
+(define directory
+  (->namestring (merge-pathnames "5.52/"
+                                 (directory-pathname (current-load-pathname)))))
 
 ;; The builds must be free of warnings, so make prints nothing.
 (check (run-command (string-append "make -s -B -j8 -C " directory " runtime")
@@ -169,7 +171,7 @@
        (if (null? list)
            '()
            (cons (procedure (car list)) (map procedure (cdr list))))))
-   (read-forms "ch4/lib/mceval.scm")
+   (read-forms (merge-pathnames "../ch4/lib/mceval.scm" (current-load-pathname)))
    '((define (evaluate-input)
        (let ((input (read)))
          (if (not (eof-object? input))

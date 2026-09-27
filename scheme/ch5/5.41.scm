@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/5.40.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "5.40.scm" (current-load-pathname)))
 
 (define (find-variable var compile-time-env)
   (define (scan-frames frames frame-number)

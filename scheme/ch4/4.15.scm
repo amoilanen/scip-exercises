@@ -1,4 +1,4 @@
-(load "lib/check.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
 
 ;; Suppose halts? existed and consider (try try):
 ;; - if (halts? try try) is true, (try try) runs forever, so it does not halt;

@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch2/lib/generic-arithmetic.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/generic-arithmetic.scm" (current-load-pathname)))
 
 (define (div-terms l1 l2)
   (cond ((empty-termlist? l2)

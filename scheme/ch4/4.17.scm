@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/4.16.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "4.16.scm" (current-load-pathname)))
 
 ;; Sequential definitions: applying the procedure creates one frame binding
 ;; the parameters, and the defines add u and v to that frame; <e3> runs there.

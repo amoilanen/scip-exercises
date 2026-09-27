@@ -1,4 +1,4 @@
-(load "lib/check.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
 
 ;; (define acc (make-account 50)) creates E1, enclosed by the global
 ;; environment, binding balance = 50 and the internal procedures withdraw,

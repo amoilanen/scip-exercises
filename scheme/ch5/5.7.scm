@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/5.4.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "5.4.scm" (current-load-pathname)))
 
 (define (expt-machine-run make-expt-machine result-register b n)
   (let* ((machine (make-expt-machine))

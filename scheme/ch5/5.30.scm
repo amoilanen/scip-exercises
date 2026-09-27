@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/lib/eceval.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/eceval.scm" (current-load-pathname)))
 
 ;; Operations that can fail return an eceval-error instead of signalling an
 ;; error in the underlying Scheme.  The controller tests for it after each

@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/lib/eceval-compiled.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/eceval-compiled.scm" (current-load-pathname)))
 
 (define fib
   '(define (fib n)
@@ -95,7 +95,7 @@
            (lambda (n) (- (* 2 n) 2))
            ns)
 
-(load "ch5/lib/open-coding.scm")
+(load (merge-pathnames "lib/open-coding.scm" (current-load-pathname)))
 
 (check-fit (compiled-with (make-compiled-eceval eceval-dispatch-table '() '()))
            (lambda (n) (* 7 (fibonacci (+ n 1))))

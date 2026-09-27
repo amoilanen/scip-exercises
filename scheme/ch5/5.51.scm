@@ -1,4 +1,4 @@
-(load "lib/check.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
 (load-option 'synchronous-subprocess)
 
 ;; Exercise 5.51: the explicit-control evaluator in C lives in ch5/5.51.
@@ -16,10 +16,15 @@
   (apply string-append
          (map (lambda (string) (string-append string "\n")) strings)))
 
-;; The build must be free of warnings, so make prints nothing.
-(check (run-command "make -s -B -j8 -C ch5/5.51" "") => '(0 . ""))
+(define directory
+  (->namestring (merge-pathnames "5.51/"
+                                 (directory-pathname (current-load-pathname)))))
 
-(define interpreter "ch5/5.51/build/scheme")
+;; The build must be free of warnings, so make prints nothing.
+(check (run-command (string-append "make -s -B -j8 -C " directory) "")
+       => '(0 . ""))
+
+(define interpreter (string-append directory "build/scheme"))
 
 (define (scheme program)
   (cdr (run-command interpreter program)))
@@ -128,12 +133,12 @@
 
 ;;; A program can also be read from a file.
 
-(call-with-output-file "ch5/5.51/build/program.scm"
+(call-with-output-file (string-append directory "build/program.scm")
   (lambda (port)
     (write '(define (square x) (* x x)) port)
     (write '(square 12) port)))
 
 (check (cdr (run-command (string-append interpreter
-                                        " ch5/5.51/build/program.scm")
+                                        " " directory "build/program.scm")
                          ""))
        => (lines "ok" "144"))

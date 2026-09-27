@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/mceval.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/mceval.scm" (current-load-pathname)))
 
 ;; Binding one operand with let before the other is evaluated fixes the order,
 ;; whatever order the underlying Scheme uses for the arguments of cons.

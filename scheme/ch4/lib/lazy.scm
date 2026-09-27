@@ -2,7 +2,7 @@
 ;; Compound procedures receive their operands as thunks; primitives, the
 ;; predicate of if, operators and the driver loop force them.
 
-(load "ch4/lib/mceval.scm")
+(load (merge-pathnames "mceval.scm" (current-load-pathname)))
 
 (define (mc-eval exp env)
   (cond ((self-evaluating? exp) exp)

@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/lib/regsim.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/regsim.scm" (current-load-pathname)))
 
 (define ambiguous-controller
   '(start

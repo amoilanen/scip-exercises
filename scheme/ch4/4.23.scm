@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/analyze.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/analyze.scm" (current-load-pathname)))
 
 ;; The book's analyze-sequence walks the list of expressions once, during
 ;; analysis, and chains their execution procedures into a single procedure.
