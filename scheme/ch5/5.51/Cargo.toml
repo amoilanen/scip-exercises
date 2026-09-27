@@ -1,0 +1,8 @@
+[package]
+name = "scheme"
+version = "0.1.0"
+edition = "2021"
+description = "The explicit-control evaluator of SICP section 5.4 in Rust (exercise 5.51)"
+publish = false
+
+[dependencies]

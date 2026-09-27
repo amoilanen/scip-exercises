@@ -1,16 +1,13 @@
 # Builds build/NAME from build/NAME.c, a program that compile-to-c.scm
-# compiled to C, linked with the runtime and the data layer of exercise
-# 5.51. make runtime builds only the runtime.
+# compiled to C, linked with the runtime and its data layer. make runtime
+# builds only the runtime.
 
 CC = gcc
-CORE = ../5.51
-CFLAGS = -std=c99 -Wall -Wextra -pedantic -MMD -MP -I. -I$(CORE)
+CFLAGS = -std=c99 -Wall -Wextra -pedantic -MMD -MP -I.
 BUILD = build
 
 RUNTIME = $(addprefix $(BUILD)/, object.o memory.o error.o reader.o \
             printer.o environment.o primitives.o runtime.o)
-
-vpath %.c $(CORE)
 
 runtime: $(RUNTIME)
 

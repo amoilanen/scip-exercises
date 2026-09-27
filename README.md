@@ -11,8 +11,8 @@ written for MIT/GNU Scheme.
   serializers and streams (ch3), the metacircular, analyzing, lazy and amb
   evaluators and the query system (ch4), the register-machine simulator,
   the explicit-control evaluator and the compiler (ch5).
-- `scheme/ch5/5.51/`, `scheme/ch5/5.52/` — the Scheme interpreter in C and
-  the compiler to C of exercises 5.51 and 5.52.
+- `scheme/ch5/5.51/`, `scheme/ch5/5.52/` — the Scheme interpreter in Rust
+  and the compiler to C of exercises 5.51 and 5.52.
 - `scheme/lib/check.scm` — a small test library:
   `(check expr => expected)`, `(check expr (=> same?) expected)`,
   `(check-error expr)`.
@@ -36,5 +36,5 @@ mit-scheme --quiet --load ch3/3.17.scm --eval '(exit)'
 ```
 
 A failing check stops with an error describing the expression, the expected
-and the actual value. Exercises 5.51 and 5.52 additionally need `gcc` and
-`make`.
+and the actual value. Exercise 5.51 additionally needs `cargo`, and
+exercise 5.52 `gcc` and `make`.

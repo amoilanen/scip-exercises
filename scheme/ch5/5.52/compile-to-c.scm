@@ -5,7 +5,8 @@
 ;; it produces becomes a C statement: registers are fields of reg, labels
 ;; are C labels, and a goto to a label held in a register jumps through a
 ;; switch on the label's number. runtime.c supplies the operations, and
-;; the data layer of exercise 5.51 the objects and garbage collection.
+;; the data layer (object.c, memory.c and the rest) the objects and
+;; garbage collection.
 ;;
 ;;   (compile-to-c exps port)  writes a C program that evaluates exps
 

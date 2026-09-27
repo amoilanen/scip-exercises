@@ -4,8 +4,11 @@
 *.com
 *.ext
 
-# C builds (exercises 5.51, 5.52)
+# C builds (exercise 5.52)
 *.o
 build/
+
+# Rust builds (exercise 5.51)
+target/
 
 *.log

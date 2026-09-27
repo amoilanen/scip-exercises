@@ -1,7 +1,7 @@
 (load "lib/check.scm")
 (load-option 'synchronous-subprocess)
 
-;; Exercise 5.51: the explicit-control evaluator in C lives in ch5/5.51.
+;; Exercise 5.51: the explicit-control evaluator in Rust lives in ch5/5.51.
 ;; It prints the value of each expression it reads, like the driver loop
 ;; of section 5.4.4, and error messages begin with a semicolon.
 
@@ -16,10 +16,14 @@
   (apply string-append
          (map (lambda (string) (string-append string "\n")) strings)))
 
-;; The build must be free of warnings, so make prints nothing.
-(check (run-command "make -s -B -j8 -C ch5/5.51" "") => '(0 . ""))
+;; The build must be free of warnings, so cargo prints nothing.
+(check (run-command (string-append "cargo build --release --quiet"
+                                   " --manifest-path ch5/5.51/Cargo.toml"
+                                   " --target-dir ch5/5.51/target")
+                    "")
+       => '(0 . ""))
 
-(define interpreter "ch5/5.51/build/scheme")
+(define interpreter "ch5/5.51/target/release/scheme")
 
 (define (scheme program)
   (cdr (run-command interpreter program)))
@@ -128,12 +132,12 @@
 
 ;;; A program can also be read from a file.
 
-(call-with-output-file "ch5/5.51/build/program.scm"
+(call-with-output-file "ch5/5.51/target/program.scm"
   (lambda (port)
     (write '(define (square x) (* x x)) port)
     (write '(square 12) port)))
 
 (check (cdr (run-command (string-append interpreter
-                                        " ch5/5.51/build/program.scm")
+                                        " ch5/5.51/target/program.scm")
                          ""))
        => (lines "ok" "144"))

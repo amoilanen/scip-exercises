@@ -1,6 +1,6 @@
 /* The runtime for programs compiled to C by compile-to-c.scm. It adds
  * the registers and the operations of compiled code (section 5.5) to the
- * data layer of exercise 5.51. */
+ * data layer: objects, memory, environments and primitives. */
 
 #ifndef RUNTIME_H
 #define RUNTIME_H

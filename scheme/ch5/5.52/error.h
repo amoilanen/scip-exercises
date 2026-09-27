@@ -1,5 +1,5 @@
 /* Errors print a message on stderr and jump back to error_recovery, which
- * the driver sets up with setjmp. */
+ * main sets up with setjmp. */
 
 #ifndef ERROR_H
 #define ERROR_H
