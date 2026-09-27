@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch2/2.93.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "2.93.scm" (current-load-pathname)))
 
 (define (remainder-terms a b)
   (cadr (div-terms a b)))

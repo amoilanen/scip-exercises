@@ -1,6 +1,6 @@
-(load "lib/check.scm")
-(load "ch5/5.43.scm")
-(load "ch5/lib/open-coding.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "5.43.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/open-coding.scm" (current-load-pathname)))
 
 ;; An operator that names a primitive is open-coded only if it isn't bound
 ;; by an enclosing lambda, i.e. if it isn't in the compile-time environment.

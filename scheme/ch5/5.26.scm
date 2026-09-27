@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/lib/eceval.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/eceval.scm" (current-load-pathname)))
 
 (define iterative-factorial
   '(define (factorial n)

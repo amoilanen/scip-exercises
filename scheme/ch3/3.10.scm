@@ -1,4 +1,4 @@
-(load "lib/check.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
 
 ;; (define W1 (make-withdraw 100)) applies make-withdraw, creating E1 with
 ;; initial-amount = 100.  The let is an application of a lambda, so it

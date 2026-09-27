@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/amb.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/amb.scm" (current-load-pathname)))
 
 ;; Louis's version finds the first parse, but asking for another one sends
 ;; it into an infinite loop: the second alternative calls parse-verb-phrase

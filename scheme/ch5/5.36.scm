@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/lib/compiler.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/compiler.scm" (current-load-pathname)))
 
 ;; The compiler evaluates operands right to left: construct-arglist reverses
 ;; the operand codes so that each value can be consed onto argl.

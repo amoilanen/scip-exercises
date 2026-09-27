@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/lib/eceval-compiled.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/eceval-compiled.scm" (current-load-pathname)))
 
 ;; The evaluator initializes compapp to its compound-apply entry point (see
 ;; ch5/lib/eceval-compiled.scm).  compound-apply expects the continuation

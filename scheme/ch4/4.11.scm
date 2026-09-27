@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/mceval.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/mceval.scm" (current-load-pathname)))
 
 ;; A frame is a headed list of (variable . value) pairs; the header gives
 ;; add-binding-to-frame! a pair to mutate even when the frame is empty.

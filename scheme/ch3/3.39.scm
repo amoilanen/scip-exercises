@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/lib/serializers.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/serializers.scm" (current-load-pathname)))
 
 ;; Only 110 disappears: the squaring reads x twice under the serializer,
 ;; so the increment can no longer change x between the two reads.  The

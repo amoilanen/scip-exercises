@@ -1,6 +1,6 @@
-(load "lib/check.scm")
-(load "ch5/lib/regsim.scm")
-(load "ch5/lib/machines.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/regsim.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/machines.scm" (current-load-pathname)))
 
 ;; In afterfib-n-1 the controller restores continue and saves it again right
 ;; away, while continue is not changed in between. Both instructions can go.

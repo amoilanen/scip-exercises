@@ -27,4 +27,4 @@
   (fluid-let ((memoize-promises? #f))
     (thunk)))
 
-(load "ch3/lib/streams.scm")
+(load (merge-pathnames "streams.scm" (current-load-pathname)))

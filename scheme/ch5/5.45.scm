@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/lib/eceval-compiled.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/eceval-compiled.scm" (current-load-pathname)))
 
 (define factorial
   '(define (factorial n)
@@ -88,7 +88,7 @@
 ;; the constant cost of entering from the interpreter and of the test
 ;; whether factorial is a primitive or a compiled procedure.
 
-(load "ch5/lib/open-coding.scm")
+(load (merge-pathnames "lib/open-coding.scm" (current-load-pathname)))
 
 (check-fit (compiled-with (make-compiled-eceval eceval-dispatch-table '() '()))
            (lambda (n) (+ (* 2 n) 3))

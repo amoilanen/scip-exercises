@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/lib/serializers.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/serializers.scm" (current-load-pathname)))
 
 ;; Sequentially, each exchange swaps two balances, so any number of them
 ;; only permutes 10, 20 and 30.  serialized-exchange holds the serializers

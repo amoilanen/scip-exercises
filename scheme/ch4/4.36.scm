@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/4.35.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "4.35.scm" (current-load-pathname)))
 
 ;; Replacing an-integer-between by an-integer-starting-from does not work:
 ;; with i and j fixed at 1 the search backtracks only to the most recent

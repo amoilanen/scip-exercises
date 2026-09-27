@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/lib/compiler.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/compiler.scm" (current-load-pathname)))
 
 ;;; The evaluator uses let, and and or, which the compiler must handle.
 
@@ -60,7 +60,8 @@
 (define evaluator
   (remove (lambda (definition)
             (memq (definition-variable definition) '(driver-loop interpret)))
-          (read-definitions "ch4/lib/mceval.scm")))
+          (read-definitions
+           (merge-pathnames "../ch4/lib/mceval.scm" (current-load-pathname)))))
 
 ;; map takes procedures of the compiled program, which only compiled code
 ;; can call, so it is compiled too.  It applies procedure from left to

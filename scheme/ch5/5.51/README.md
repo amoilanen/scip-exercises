@@ -100,9 +100,9 @@ cargo test
 
 This runs the unit tests at the end of each module in `src/` and the
 integration tests in `tests/`, which run the interpreter as a program. From
-the `scheme` directory of the repository, `./run-tests.sh ch5/5.51.scm`
-builds the interpreter and runs these tests together with the checks of
-`ch5/5.51.scm`.
+the root of the repository, `scheme/run-tests.sh ch5/5.51.scm` builds the
+interpreter and runs these tests together with the checks of
+`scheme/ch5/5.51.scm`.
 
 ## Source
 

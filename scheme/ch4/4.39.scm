@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/amb.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/amb.scm" (current-load-pathname)))
 
 ;; The order of the requirements cannot change the answer: all five floors
 ;; are chosen before any requirement is checked, so the same 3125

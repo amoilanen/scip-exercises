@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/query.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/query.scm" (current-load-pathname)))
 
 ;; An accumulation over the frames of a query counts a fact once for every
 ;; derivation of it, and rules such as wheel derive the same fact several

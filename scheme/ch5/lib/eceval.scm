@@ -7,8 +7,8 @@
 ;;   (eceval-eval exp)  evaluates exp in the-global-environment
 ;;   (make-eceval dispatch-table extra-code extra-operations)  builds a variant
 
-(load "ch4/lib/mceval.scm")
-(load "ch5/lib/regsim.scm")
+(load (merge-pathnames "../../ch4/lib/mceval.scm" (current-load-pathname)))
+(load (merge-pathnames "regsim.scm" (current-load-pathname)))
 
 ;;; Operations
 

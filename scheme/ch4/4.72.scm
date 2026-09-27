@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/query.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/query.scm" (current-load-pathname)))
 
 ;; A stream being combined may be infinite.  Appending would then never get
 ;; past the first stream, hiding the answers of the other disjuncts or of

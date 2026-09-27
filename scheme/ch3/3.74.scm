@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/lib/streams.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/streams.scm" (current-load-pathname)))
 
 (define (sign-change-detector input last-value)
   (cond ((and (< last-value 0) (>= input 0)) 1)

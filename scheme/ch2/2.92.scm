@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch2/lib/generic-arithmetic.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/generic-arithmetic.scm" (current-load-pathname)))
 
 ;; Variables are ordered alphabetically.  A polynomial in v is kept in a
 ;; canonical form: its coefficients are numbers or polynomials in variables

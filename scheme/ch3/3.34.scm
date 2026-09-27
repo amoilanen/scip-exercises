@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/lib/constraints.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/constraints.scm" (current-load-pathname)))
 
 ;; The multiplier only deduces a value once two of its three connectors
 ;; have one.  Given a, both factors are known and b = a * a follows.  Given

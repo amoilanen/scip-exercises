@@ -4,8 +4,8 @@
 ;;   (compile exp target linkage)  returns an instruction sequence
 ;;   (compile-and-run exp ...)     compiles and runs expressions, returns val
 
-(load "ch4/lib/mceval.scm")
-(load "ch5/lib/regsim.scm")
+(load (merge-pathnames "../../ch4/lib/mceval.scm" (current-load-pathname)))
+(load (merge-pathnames "regsim.scm" (current-load-pathname)))
 
 ;;; Instruction sequences
 

@@ -1,6 +1,6 @@
-(load "lib/check.scm")
-(load "ch5/lib/regsim.scm")
-(load "ch5/lib/machines.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/regsim.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/machines.scm" (current-load-pathname)))
 
 ;; Like the counting machine of exercise 5.15, the tracing machine wraps the
 ;; execution procedures of the installed instructions.

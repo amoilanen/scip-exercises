@@ -1,4 +1,4 @@
-(load "lib/check.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
 
 (define (count-pairs x)
   (let ((visited '()))

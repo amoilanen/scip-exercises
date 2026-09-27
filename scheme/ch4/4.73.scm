@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/query.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/query.scm" (current-load-pathname)))
 
 ;; Without the explicit delay, the recursive call is an argument of
 ;; interleave and is evaluated at once, so flattening walks the entire

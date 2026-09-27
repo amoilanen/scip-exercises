@@ -1,6 +1,6 @@
-(load "lib/check.scm")
-(load "ch5/lib/compiler.scm")
-(load "ch5/lib/open-coding.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/compiler.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/open-coding.scm" (current-load-pathname)))
 
 ;; a, b and d: spread-arguments and the code generators are in
 ;; ch5/lib/open-coding.scm, which later exercises share.

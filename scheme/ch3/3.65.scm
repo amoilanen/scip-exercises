@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/3.55.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "3.55.scm" (current-load-pathname)))
 
 (define (euler-transform s)
   (let ((s0 (stream-ref s 0))

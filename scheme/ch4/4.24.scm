@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/analyze.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/analyze.scm" (current-load-pathname)))
 
 ;; Timed with runtime on MIT Scheme 12.1, both evaluators loaded from source:
 ;;

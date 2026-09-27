@@ -4,7 +4,7 @@
 ;;   (analyzing-eval exp env)    the book's eval: ((analyze exp) env)
 ;;   (analyzing-interpret exp ...)  like interpret, using analyzing-eval
 
-(load "ch4/lib/mceval.scm")
+(load (merge-pathnames "mceval.scm" (current-load-pathname)))
 
 (define (analyzing-eval exp env)
   ((analyze exp) env))

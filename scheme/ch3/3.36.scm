@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/lib/constraints.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/constraints.scm" (current-load-pathname)))
 
 ;; (define a (make-connector)) evaluates the body of make-connector in E1,
 ;; whose parent is the global environment.  E1 binds value, informant and

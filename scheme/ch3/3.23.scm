@@ -1,4 +1,4 @@
-(load "lib/check.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
 
 ;; A deque is a pair of pointers to the first and last nodes of a doubly
 ;; linked list.  Each node is a list (item prev next), so every operation

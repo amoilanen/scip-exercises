@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/lazy.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/lazy.scm" (current-load-pathname)))
 
 ;; A quoted pair is turned into a call of the evaluated language's cons on
 ;; its quoted car and cdr, so nested and longer lists are converted only as

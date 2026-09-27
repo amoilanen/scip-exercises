@@ -1,4 +1,4 @@
-(load "lib/check.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
 
 (define (last-pair x)
   (if (null? (cdr x))

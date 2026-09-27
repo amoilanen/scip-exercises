@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/lib/compiler.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/compiler.scm" (current-load-pathname)))
 
 ;; The evaluator saves env around the operator, env around each operand but
 ;; the last, argl around each operand, and proc around the operand sequence.

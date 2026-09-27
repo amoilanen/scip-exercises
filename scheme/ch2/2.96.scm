@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch2/2.95.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "2.95.scm" (current-load-pathname)))
 
 (define (scale-terms c terms)
   (mul-term-by-all-terms (make-term 0 c) terms))

@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/lib/serializers.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/serializers.scm" (current-load-pathname)))
 
 ;; The change is safe and allows exactly the same concurrency.  A
 ;; serialized procedure acquires the serializer's mutex around each call,

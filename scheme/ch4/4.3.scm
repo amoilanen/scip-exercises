@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/mceval.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/mceval.scm" (current-load-pathname)))
 
 (define special-forms (make-strong-eqv-hash-table))
 

@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/3.60.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "3.60.scm" (current-load-pathname)))
 
 ;; For a series S with constant term 1, X = 1 - S_R X.
 (define (invert-unit-series s)

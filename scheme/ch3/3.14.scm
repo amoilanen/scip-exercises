@@ -1,4 +1,4 @@
-(load "lib/check.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
 
 ;; mystery reverses a list in place: it walks down x, pointing the cdr of each
 ;; pair back to the previously visited pair.

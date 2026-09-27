@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/4.49.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "4.49.scm" (current-load-pathname)))
 
 ;; ramb-choice maps the number of remaining alternatives n to the index of
 ;; the one to try next, a number in [0, n).

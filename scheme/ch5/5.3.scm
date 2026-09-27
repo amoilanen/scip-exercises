@@ -1,6 +1,6 @@
-(load "lib/check.scm")
-(load "ch5/lib/regsim.scm")
-(load "ch5/lib/machines.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/regsim.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/machines.scm" (current-load-pathname)))
 
 ;; Version 1 data paths: registers x and guess; operations good-enough?
 ;; (reads guess and x, feeds the test) and improve (reads guess and x);

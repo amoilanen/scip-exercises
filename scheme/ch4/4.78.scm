@@ -1,6 +1,6 @@
-(load "lib/check.scm")
-(load "ch4/lib/query.scm")
-(load "ch4/lib/amb.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/query.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/amb.scm" (current-load-pathname)))
 
 ;; The query evaluator as a program for the amb evaluator: qeval takes one
 ;; frame and returns one extended frame, choosing an assertion, a rule or a

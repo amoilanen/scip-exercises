@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/amb.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/amb.scm" (current-load-pathname)))
 
 ;; Without the requirement that Smith and Fletcher do not live on adjacent
 ;; floors the puzzle has five solutions.

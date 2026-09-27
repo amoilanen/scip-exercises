@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/4.16.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "4.16.scm" (current-load-pathname)))
 
 ;; Ben (sequential definitions) gets 16, Alyssa (scanned out, 4.16) gets an
 ;; error, Eva (truly simultaneous definitions) gets 20. Eva's view matches

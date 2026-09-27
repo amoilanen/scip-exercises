@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/4.16.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "4.16.scm" (current-load-pathname)))
 
 ;; The alternative evaluates every definition's value expression before any
 ;; of the names is assigned. In solve, (stream-map f y) is then evaluated

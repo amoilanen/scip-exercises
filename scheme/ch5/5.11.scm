@@ -1,6 +1,6 @@
-(load "lib/check.scm")
-(load "ch5/lib/regsim.scm")
-(load "ch5/lib/machines.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/regsim.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/machines.scm" (current-load-pathname)))
 
 ;;; a. In afterfib-n-2, Fib(n - 2) is in val and Fib(n - 1) on the stack.
 ;;; Restoring the saved value straight into n leaves the two numbers swapped,

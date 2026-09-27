@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/lib/circuits.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/circuits.scm" (current-load-pathname)))
 
 ;; a1 or a2 = not ((not a1) and (not a2)).  A change of an input passes
 ;; through an inverter, the and-gate and the output inverter, so the delay is

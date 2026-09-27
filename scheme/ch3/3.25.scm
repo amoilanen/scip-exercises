@@ -1,4 +1,4 @@
-(load "lib/check.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
 
 ;; A table is a tree of entries (key value . children).  Any entry can hold
 ;; both a value and children, so (a) and (a b) can both be keys of the same

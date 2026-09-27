@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/query.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/query.scm" (current-load-pathname)))
 
 ;; wheel produces one frame for every way of satisfying its body, that is
 ;; for every pair of a middle manager and a person that middle manager

@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/lib/eceval.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/eceval.scm" (current-load-pathname)))
 
 ;; a. When the operator is a symbol, it is looked up directly, so env and
 ;; unev need not be saved around its evaluation.

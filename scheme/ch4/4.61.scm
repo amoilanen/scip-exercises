@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/query.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/query.scm" (current-load-pathname)))
 
 (initialize-data-base!
  '((rule (?x next-to ?y in (?x ?y . ?u)))

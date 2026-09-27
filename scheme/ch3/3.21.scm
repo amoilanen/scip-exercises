@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/lib/queue.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/queue.scm" (current-load-pathname)))
 
 ;; The printer shows the queue as the pair it is: the car is the list of
 ;; items and the cdr is the last pair of that same list, so the last item

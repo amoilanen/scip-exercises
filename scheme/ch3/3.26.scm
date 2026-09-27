@@ -1,4 +1,4 @@
-(load "lib/check.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
 
 ;; The records are kept in a binary search tree ordered by key<?.  Two keys
 ;; are the same when neither is less than the other.  Inserting rebuilds

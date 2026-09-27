@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/lib/eceval.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/eceval.scm" (current-load-pathname)))
 
 ;; eceval was built with the tail-recursive sequence code when the library
 ;; was loaded; this definition only affects machines made from now on.

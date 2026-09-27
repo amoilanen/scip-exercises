@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch2/2.94.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "2.94.scm" (current-load-pathname)))
 
 (define p1 (make-polynomial 'x '((2 1) (1 -2) (0 1))))
 (define p2 (make-polynomial 'x '((2 11) (0 7))))

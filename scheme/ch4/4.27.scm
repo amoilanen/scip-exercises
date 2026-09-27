@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/lazy.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/lazy.scm" (current-load-pathname)))
 
 ;; (define w (id (id 10))) applies the outer id at once, since the operator
 ;; is forced, so count becomes 1.  Its argument (id 10) is only delayed, and

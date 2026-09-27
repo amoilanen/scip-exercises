@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/query.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/query.scm" (current-load-pathname)))
 
 ;; Louis's versions evaluate the rule applications and the remaining
 ;; disjuncts before returning anything.  When those computations loop, the

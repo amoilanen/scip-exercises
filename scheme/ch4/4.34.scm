@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/lazy.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/lazy.scm" (current-load-pathname)))
 
 ;; A lazy pair is a tagged object that holds two procedures of the evaluated
 ;; language, each returning one (delayed) component, so that the printer

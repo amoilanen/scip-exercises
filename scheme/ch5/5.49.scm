@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/lib/compiler.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/compiler.scm" (current-load-pathname)))
 
 ;; Every expression read is compiled, assembled into the machine and run;
 ;; the compiled code returns to print-result through continue.  The loop

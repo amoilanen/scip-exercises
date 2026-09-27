@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/lib/streams.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/streams.scm" (current-load-pathname)))
 
 ;; (expand num den radix) is the stream of digits of num/den, a fraction
 ;; below 1, written in base radix: each step shifts the remainder one digit

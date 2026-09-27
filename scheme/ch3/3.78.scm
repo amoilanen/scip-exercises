@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/3.77.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "3.77.scm" (current-load-pathname)))
 
 ;; y'' = a y' + b y
 (define (solve-2nd a b dt y0 dy0)

@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/3.61.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "3.61.scm" (current-load-pathname)))
 
 (define (div-series numerator denominator)
   (let ((constant (stream-car denominator)))

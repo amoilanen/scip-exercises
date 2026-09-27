@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/5.41.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "5.41.scm" (current-load-pathname)))
 
 ;; A variable that is not in the compile-time environment can only be in the
 ;; global environment, at the end of the run-time environment; it is found

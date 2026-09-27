@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/lazy.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/lazy.scm" (current-load-pathname)))
 
 ;; A procedure passed as an argument reaches the callee as a thunk.  When the
 ;; callee applies it, the operator is a variable whose value is that thunk,

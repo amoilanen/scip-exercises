@@ -1,4 +1,4 @@
-(load "lib/check.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
 (load-option 'synchronous-subprocess)
 
 ;; Exercise 5.51: the explicit-control evaluator in Rust lives in ch5/5.51.
@@ -16,10 +16,14 @@
   (apply string-append
          (map (lambda (string) (string-append string "\n")) strings)))
 
+(define directory
+  (->namestring (merge-pathnames "5.51/"
+                                 (directory-pathname (current-load-pathname)))))
+
 (define (cargo command)
   (run-command (string-append "cargo " command " --quiet"
-                              " --manifest-path ch5/5.51/Cargo.toml"
-                              " --target-dir ch5/5.51/target")
+                              " --manifest-path " directory "Cargo.toml"
+                              " --target-dir " directory "target")
                ""))
 
 ;; The build must be free of warnings, so cargo prints nothing.
@@ -28,7 +32,7 @@
 ;; The unit tests of each module and the integration tests of the program.
 (check (car (cargo "test")) => 0)
 
-(define interpreter "ch5/5.51/target/release/scheme")
+(define interpreter (string-append directory "target/release/scheme"))
 
 (define (scheme program)
   (cdr (run-command interpreter program)))
@@ -137,12 +141,12 @@
 
 ;;; A program can also be read from a file.
 
-(call-with-output-file "ch5/5.51/target/program.scm"
+(call-with-output-file (string-append directory "target/program.scm")
   (lambda (port)
     (write '(define (square x) (* x x)) port)
     (write '(square 12) port)))
 
 (check (cdr (run-command (string-append interpreter
-                                        " ch5/5.51/target/program.scm")
+                                        " " directory "target/program.scm")
                          ""))
        => (lines "ok" "144"))

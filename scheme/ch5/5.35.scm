@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch5/lib/compiler.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/compiler.scm" (current-load-pathname)))
 
 ;; The code of figure 5.18 defines f with one parameter x.  Its body looks
 ;; up + and evaluates the operands right to left: first (g (+ x 2)), whose

@@ -5,7 +5,7 @@
 ;; Special forms are dispatched through a table, so an exercise adds one with
 ;; (install-special-form! tag analyzer) instead of rewriting analyze.
 
-(load "ch4/lib/mceval.scm")
+(load (merge-pathnames "mceval.scm" (current-load-pathname)))
 
 (define (ambeval exp env succeed fail)
   ((analyze exp) env succeed fail))

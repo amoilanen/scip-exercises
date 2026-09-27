@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/4.6.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "4.6.scm" (current-load-pathname)))
 
 (define (named-let? exp) (symbol? (cadr exp)))
 (define (named-let-name exp) (cadr exp))

@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/lazy.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/lazy.scm" (current-load-pathname)))
 
 ;; The streams of chapter 3 delay only the cdr; lazy lists delay the car as
 ;; well.  Two ways to exploit that:

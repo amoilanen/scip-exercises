@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/lib/serializers.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/serializers.scm" (current-load-pathname)))
 
 ;; serialized-exchange acquires the serializers of both accounts and then
 ;; calls the accounts' withdraw, which is now serialized with the same

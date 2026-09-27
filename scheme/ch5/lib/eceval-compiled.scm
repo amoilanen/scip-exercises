@@ -11,8 +11,8 @@
 ;;                                    environment, compiled or interpreted
 ;;   (make-compiled-eceval dispatch-table extra-code extra-operations)
 
-(load "ch5/lib/compiler.scm")
-(load "ch5/lib/eceval.scm")
+(load (merge-pathnames "compiler.scm" (current-load-pathname)))
+(load (merge-pathnames "eceval.scm" (current-load-pathname)))
 
 (define compiled-apply-dispatch-code
   (append '(apply-dispatch

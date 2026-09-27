@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch3/lib/optional-memoization.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/optional-memoization.scm" (current-load-pathname)))
 
 (define (show x)
   (display-line x)

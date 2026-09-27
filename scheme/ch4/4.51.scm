@@ -1,5 +1,5 @@
-(load "lib/check.scm")
-(load "ch4/lib/amb.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/amb.scm" (current-load-pathname)))
 
 (define (analyze-permanent-assignment exp)
   (let ((var (assignment-variable exp))

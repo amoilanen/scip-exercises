@@ -1,6 +1,6 @@
-(load "lib/check.scm")
-(load "ch5/lib/regsim.scm")
-(load "ch5/lib/machines.scm")
+(load (merge-pathnames "../lib/check.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/regsim.scm" (current-load-pathname)))
+(load (merge-pathnames "lib/machines.scm" (current-load-pathname)))
 
 ;; a. Recursive exponentiation. Registers b, n, val, continue and a stack;
 ;; b never changes and n is not needed after the recursive call, so only
